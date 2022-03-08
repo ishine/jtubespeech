@@ -18,13 +18,3 @@ services:
       memlock: -1 # set upper limit for how much memory is locked for the container (-1 means lock as much as the container uses)
       stack: 67108864
     shm_size: 32gb # set upper limit for how much shared memory container can use
-
-  tensorboard:
-    stdin_open: true
-    tty: true
-    image: jtubespeech:v0.1.0
-    ports:
-      - 6006:6006
-    volumes:
-      - ./:/jtubespeech
-    command: tensorboard --logdir /logs --host 0.0.0.0 --port 6006
