@@ -7,3 +7,4 @@ README.pdf
 __pycache__/
 *.ipynb
 multi-lang/*
+word-small/*
