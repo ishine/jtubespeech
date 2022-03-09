@@ -8,3 +8,4 @@ __pycache__/
 *.ipynb
 multi-lang/*
 word-small/*
+*.opus
