@@ -44,9 +44,10 @@ def retrieve_subtitle_exists(lang, fn_videoid, outdir="sub", wait_sec=0.2, fn_ch
       result = subprocess.check_output(f"youtube-dl --list-subs --sub-lang {lang} --skip-download {url}", \
         shell=True, universal_newlines=True)
       auto_lang, manu_lang = get_subtitle_language(result)
-      subtitle_exists = subtitle_exists.append( \
-        {"videoid": videoid, "auto": lang in auto_lang, "sub": lang in manu_lang}, 
-        ignore_index=True)
+    #   subtitle_exists = subtitle_exists.append( \
+    #     {"videoid": videoid, "auto": lang in auto_lang, "sub": lang in manu_lang}, 
+    #     ignore_index=True)
+      subtitle_exists = pd.concat([subtitle_exists, pd.DataFrame.from_records([{"videoid": videoid, "auto": lang in auto_lang, "sub": lang in manu_lang}])])
       n_video += 1
     except:
       pass
