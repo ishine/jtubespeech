@@ -127,9 +127,11 @@ def get_partitions(
     cut_length_lpz_frames = int(cut_length // samples_to_frames_ratio)
     partition_start = 0
     while t > max_length:
-        start = int(max(0, partition_start - samples_to_frames_ratio * overlap))
+        start = int(max(0, partition_start -
+                    samples_to_frames_ratio * overlap))
         end = int(
-            partition_start + cut_length + samples_to_frames_ratio * (1 + overlap) - 1
+            partition_start + cut_length +
+            samples_to_frames_ratio * (1 + overlap) - 1
         )
         partitions += [(start, end)]
         # overlap - duplicate frames shall be deleted.
@@ -143,7 +145,8 @@ def get_partitions(
         t -= cut_length
         partition_start += cut_length
     else:
-        start = int(max(0, partition_start - samples_to_frames_ratio * overlap))
+        start = int(max(0, partition_start -
+                    samples_to_frames_ratio * overlap))
         partitions += [(start, None)]
     partition_dict = {
         "partitions": partitions,
@@ -292,7 +295,7 @@ def align(
         f" (overlap={partitions_overlap_frames})"
     )
 
-    ## application-specific settings
+    # application-specific settings
     # japanese text cleaning
     aligner.preprocess_fn.text_cleaner.cleaner_types += ["jaconv"]
 

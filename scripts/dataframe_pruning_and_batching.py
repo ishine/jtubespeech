@@ -4,6 +4,18 @@
 
 import pandas as pd
 import os
+import sys
+import argparse
+
+def parse_args():
+  parser = argparse.ArgumentParser(
+    description="Retrieving whether subtitles exists or not.",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+  )
+  parser.add_argument("lang",         type=str, help="language code (ja, en, ...)")
+  parser.add_argument("raw_csv",      type=str, help="filename of the raw csv that is yet to be splitted")  
+  parser.add_argument("--entries",    type=int, default=50, help="number of entries per csv file")
+  return parser.parse_args(sys.argv[1:])
 
 class DataframePruningAndBatching():
     def __init__(self, lang_code, source_csv_path, dest_dir, entries_per_csv):
@@ -50,13 +62,23 @@ class DataframePruningAndBatching():
         return self.remove_unwanted_row()
 
 if __name__ == '__main__':
-    LANG_CODE = 'id'
-    SOURCE_CSV = './sub/id/test.csv'
-    DEST_DIR = './sub/id/csv_batch/'
-    ENTRIES_PER_CSV = 50
+    # LANG_CODE = 'id'
+    # SOURCE_CSV = './sub/id/test.csv'
+    # dirname_path = os.path.dirname(SOURCE_CSV)
+    # DEST_DIR = f'{dirname_path}/csv_batch/'
+    # ENTRIES_PER_CSV = 50
 
-    df_pruning_batching = DataframePruningAndBatching(lang_code=LANG_CODE, 
-                                             source_csv_path=SOURCE_CSV, 
-                                             dest_dir=DEST_DIR, 
-                                             entries_per_csv=ENTRIES_PER_CSV)
+    # df_pruning_batching = DataframePruningAndBatching(lang_code=LANG_CODE, 
+    #                                                  source_csv_path=SOURCE_CSV, 
+    #                                                  dest_dir=DEST_DIR, 
+    #                                                  entries_per_csv=ENTRIES_PER_CSV)
+    
+    # passing arguments
+    args = parse_args()
+    dirname_path = os.path.dirname(args.raw_csv)
+    df_pruning_batching = DataframePruningAndBatching(lang_code=args.lang, 
+                                                     source_csv_path=args.raw_csv, 
+                                                     dest_dir=f'{dirname_path}/csv_batch/', 
+                                                     entries_per_csv=args.entries)
+
     df_pruning_batching()
