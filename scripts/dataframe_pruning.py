@@ -6,11 +6,10 @@ import pandas as pd
 import os
 
 class DataframePruning():
-    def __init__(self, source_csv_path, dest_dir, dest_csv_filename, batch_num):
+    def __init__(self, source_csv_path, dest_dir, dest_csv_filename):
         self.source_csv_path = source_csv_path
         self.dest_dir = dest_dir
         self.dest_csv_filename = dest_csv_filename
-        self.batch_num = batch_num
 
     def remove_unwanted_row(self):
         # reads the csv generated from retrieve_subtitle_exists.py
@@ -44,10 +43,8 @@ if __name__ == '__main__':
     SOURCE_CSV = './sub/id/test.csv'
     DEST_DIR = './sub/id/csv_batch/'
     DEST_CSV_FILENAME = 'test_edited.csv'
-    BATCH_NUM = 1
 
     df_pruning = DataframePruning(source_csv_path=SOURCE_CSV, 
                                   dest_dir=DEST_DIR, 
-                                  dest_csv_filename=DEST_CSV_FILENAME, 
-                                  batch_num=BATCH_NUM)
+                                  dest_csv_filename=DEST_CSV_FILENAME)
     df_pruning()
