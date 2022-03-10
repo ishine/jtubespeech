@@ -10,7 +10,6 @@ class AudioLanguagePrediction():
         # load the voxlingua107 pretrained model from speechbrain
         language_id = EncoderClassifier.from_hparams(source="TalTechNLP/voxlingua107-epaca-tdnn", savedir="tmp")
 
-        # signal = language_id.load_audio("https://omniglot.com/soundfiles/udhr/udhr_th.mp3")
         signal = language_id.load_audio(self.filepath)
         prediction =  language_id.classify_batch(signal)
 
@@ -24,6 +23,6 @@ class AudioLanguagePrediction():
         return self.get_prediction()
 
 if __name__ == '__main__':
-    FILEPATH = "../indo.opus"
-    lang_prediction = AudioLanguagePrediction(FILEPATH)
+    FILEPATH = "../barca_spanish.opus"
+    lang_prediction = AudioLanguagePrediction(filepath=FILEPATH)
     lang_prediction()
