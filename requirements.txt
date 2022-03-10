@@ -12,3 +12,5 @@ youtube_dl
 typeguard
 pathlib
 requests
+torchaudio
+speechbrain
