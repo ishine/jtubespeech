@@ -34,22 +34,3 @@ if __name__ == '__main__':
     # delete the sampled audio file
     #os.remove(f'{url}.opus')
 
-# # call the load_transformer module to predict the language of the audio
-# lang_prediction = AudioLanguagePrediction(filepath=f'{url}.opus')
-# prediction = lang_prediction()
-# print(prediction)
-# print()
-# print(prediction[3])
-# print()
-# print(prediction[0][0].numpy())
-
-# # load the key value pair of the language id and the number tagged to it from the dictionary
-# mapping = load_mapping()
-# target_lang_idx = mapping.get(TARGET_LANG)
-# print(target_lang_idx)
-# print()
-# print(prediction[0][0].numpy()[target_lang_idx])
-
-# if prediction[0][0].numpy()[target_lang_idx] > 0.8:
-#     print("Thats the language")
-

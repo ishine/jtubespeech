@@ -3,11 +3,17 @@ import argparse
 import sys
 import subprocess
 import shutil
+
+from cv2 import threshold
 import pydub
 from pathlib import Path
 from util import make_video_url, make_basename, vtt2txt, autovtt2txt
 import pandas as pd
 from tqdm import tqdm
+
+# self defined modules
+from detect_target_language import DetectTargetLanguage
+from sample_audio import AudioSampling
 
 
 def parse_args():
@@ -19,6 +25,8 @@ def parse_args():
                         help="language code (ja, en, ...)")
     parser.add_argument("sublist",      type=str,
                         help="filename of list of video IDs with subtitles")
+    parser.add_argument("--threshold",     type=float,
+                        default=0.8, help="probability threshold to determine if it is target language")
     parser.add_argument("--outdir",     type=str,
                         default="video", help="dirname to save videos")
     parser.add_argument("--keeporg",    action='store_true',
@@ -36,9 +44,31 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
         4 (optional). change fn["vtt"] (path to save subtitle) to another. 
     """
 
+    # parse args to take in the language code
+    args = parse_args()
+
     sub = pd.read_csv(fn_sub)
 
     for videoid in tqdm(sub[sub["sub"] == True]["videoid"]):  # manual subtitle only
+
+        ## ADDITIONAL CODES TO CHECK IF AUDIO IS TARGET LANGUAGE OR NOT
+        
+        # SAMPLE THE AUDIO
+        sample_aud = AudioSampling(url_id=videoid)
+        sample_aud()
+        
+        # CHECK IF THE AUDIO IS THE TARGET TRANSCRIPT LANGUAGE
+        predict_target_lang = DetectTargetLanguage(url_id=videoid, 
+                                                   language_code=args.lang,
+                                                   threshold=args.threshold)
+
+        target = predict_target_lang()
+
+        # IF IT IS, CONTINUE TO DOWNLOAD THE AUDIO
+        # ELSE, DO NOT DOWNLOAD THE AUDIO AND GO TO THE NEXT ITERATION
+        if not target:
+            continue
+
         fn = {}
         for k in ["wav", "wav16k", "vtt", "txt"]:
             fn[k] = Path(outdir) / lang / k / \
