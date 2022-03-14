@@ -13,21 +13,12 @@ class AudioSampling():
         if cp.returncode != 0:
             print(f"Failed to download the video: url = {self.url_id}")
 
-        # call this code only at the base directory - i.e /jtubespeech
-        # make sure there is no .opus file in the base directory
-
-        # rename the audio file to the filename same as the one in the csv file
-        for file in os.listdir('.'):
-            if file.endswith('.opus'):
-                os.rename(file, f'{self.url_id}.opus')
-
+                
     def __call__(self):
         return self.audio_sampling()
 
-
 if __name__ == '__main__':
-    url = 'QbtV4QRi2os'
-    #TARGET_LANG = 'es'
+    url = '_PaC2nJIhgE'
     sample_aud = AudioSampling(url)
     sample_aud()
 
