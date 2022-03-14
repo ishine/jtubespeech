@@ -14,7 +14,7 @@ class DetectTargetLanguage():
         # load the voxlingua107 pretrained model from speechbrain
         language_id = EncoderClassifier.from_hparams(source="TalTechNLP/voxlingua107-epaca-tdnn", savedir="tmp")
 
-        signal = language_id.load_audio(self.url_id)
+        signal = language_id.load_audio(f'{self.url_id}.opus')
         prediction =  language_id.classify_batch(signal)
 
         return prediction
@@ -41,8 +41,7 @@ class DetectTargetLanguage():
 
 if __name__ == '__main__':
     # debugging code to debug this file individually with example audio
-    FILENAME = "QbtV4QRi2os"
-    URL_ID = f"./{FILENAME}.opus"
+    URL_ID = "QbtV4QRi2os"
     LANGUAGE_CODE = 'es'
     THRESHOLD = 0.8
     
@@ -55,4 +54,4 @@ if __name__ == '__main__':
     lang_prediction()
 
     # after prediction, the sampled audio file is not needed anymore
-    os.remove(URL_ID)
+    os.remove(f'{URL_ID}.opus')

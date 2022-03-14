@@ -4,7 +4,6 @@ import sys
 import subprocess
 import shutil
 
-from cv2 import threshold
 import pydub
 from pathlib import Path
 from util import make_video_url, make_basename, vtt2txt, autovtt2txt
