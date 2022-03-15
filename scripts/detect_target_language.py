@@ -70,11 +70,7 @@ class DetectTargetLanguage():
         youtube_vid_title = ' '.join(youtube_vid_title.split())
         print()
         print()
-        print()
-        print()
         print(youtube_vid_title)
-        print()
-        print()
         print()
         print()
         
