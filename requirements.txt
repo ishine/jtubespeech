@@ -15,4 +15,4 @@ requests
 torchaudio
 speechbrain
 ruamel.yaml
-pycld3
+transformers
