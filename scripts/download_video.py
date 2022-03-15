@@ -51,10 +51,13 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
 
     sub = pd.read_csv(fn_sub)
 
+    # initialise number of successful scrape
+    success_count = 0
+
     for videoid in tqdm(sub[sub["sub"] == True]["videoid"]):  # manual subtitle only
 
         ## ADDITIONAL CODES TO CHECK IF AUDIO (AND MAYBE TEXT) IS TARGET LANGUAGE OR NOT
-        
+
         # SAMPLE THE AUDIO
         sample_aud = AudioSampling(url_id=videoid)
         sample_aud()
@@ -149,7 +152,12 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
             # wait
             if wait_sec > 0.01:
                 time.sleep(wait_sec)
+        
+        success_count += 1
 
+    print('\n---------------------------------\n')
+    print(f'Number of successful scrape in this batch: {success_count}/{len(sub[sub["sub"] == True]["videoid"])}')
+    print('\n---------------------------------\n')
     return Path(outdir) / lang
 
 

@@ -22,7 +22,7 @@ def make_dump_url(lang: str) -> str:
 
 
 def make_basename(videoid: str) -> str:
-    return str(Path(videoid[:4]) / videoid)
+    return str(Path(videoid[:8]) / videoid)
 
 
 def count_total_second(t: dt) -> float:
@@ -135,7 +135,7 @@ def get_subtitle_language(response_youtube):
 
     return subtitle["auto"], subtitle["sub"]
 
-def load_mapping():
+def load_audio_language_mapping():
     mapping = {
         'ab': 0,
         'af': 1,
@@ -246,3 +246,106 @@ def load_mapping():
         'zh': 106
     }
     return mapping
+
+def load_text_language_mapping():
+    
+    # this dictionary is the same as the model.config.id2label in check_target_language_video_title method in the detect_target_language module
+    id_to_lang_mapping = {
+        0: 'Arabic',
+        1: 'Basque',
+        2: 'Breton',
+        3: 'Catalan',
+        4: 'Chinese_China',
+        5: 'Chinese_Hongkong',
+        6: 'Chinese_Taiwan',
+        7: 'Chuvash',
+        8: 'Czech',
+        9: 'Dhivehi',
+        10: 'Dutch',
+        11: 'English',
+        12: 'Esperanto',
+        13: 'Estonian',
+        14: 'French',
+        15: 'Frisian',
+        16: 'Georgian',
+        17: 'German',
+        18: 'Greek',
+        19: 'Hakha_Chin',
+        20: 'Indonesian',
+        21: 'Interlingua',
+        22: 'Italian',
+        23: 'Japanese',
+        24: 'Kabyle',
+        25: 'Kinyarwanda',
+        26: 'Kyrgyz',
+        27: 'Latvian',
+        28: 'Maltese',
+        29: 'Mongolian',
+        30: 'Persian',
+        31: 'Polish',
+        32: 'Portuguese',
+        33: 'Romanian',
+        34: 'Romansh_Sursilvan',
+        35: 'Russian',
+        36: 'Sakha',
+        37: 'Slovenian',
+        38: 'Spanish',
+        39: 'Swedish',
+        40: 'Tamil',
+        41: 'Tatar',
+        42: 'Turkish',
+        43: 'Ukranian',
+        44: 'Welsh'
+    }
+
+  # this dictionary is the mapping from the name of the language to the language code of the language
+    lang_to_code_mapping = {
+        'Arabic': 'ar',
+        'Basque': 'eu',
+        'Breton': 'br',
+        'Catalan': 'ca',
+        'Chinese_China': 'zh',
+        'Chinese_Hongkong': 'zh',
+        'Chinese_Taiwan': 'zh',
+        'Chuvash': 'cv',
+        'Czech': 'cs',
+        'Dhivehi': 'dv',
+        'Dutch': 'nl',
+        'English': 'en',
+        'Esperanto': 'eo',
+        'Estonian': 'et',
+        'French': 'fr',
+        'Frisian': 'fy',
+        'Georgian': 'ka',
+        'German': 'de',
+        'Greek': 'el',
+        'Hakha_Chin': '-',
+        'Indonesian': 'id',
+        'Interlingua': 'ia',
+        'Italian': 'it',
+        'Japanese': 'ja',
+        'Kabyle': 'kl',
+        'Kinyarwanda': 'rw',
+        'Kyrgyz': 'ky',
+        'Latvian': 'lv',
+        'Maltese': 'mt',
+        'Mongolian': 'mn',
+        'Persian': 'fa',
+        'Polish': 'pl',
+        'Portuguese': 'pt',
+        'Romanian': 'ro',
+        'Romansh_Sursilvan': 'rm',
+        'Russian': 'ru',
+        'Sakha': '-',
+        'Slovenian': 'sl',
+        'Spanish': 'es',
+        'Swedish': 'sv',
+        'Tamil': 'ta',
+        'Tatar': 'tt',
+        'Turkish': 'tr',
+        'Ukranian': 'uk',
+        'Welsh': 'cy'
+    }
+
+    id_to_code_mapping = {k:j for k, j in zip(id_to_lang_mapping.keys(), lang_to_code_mapping.values())}
+    return id_to_code_mapping
