@@ -16,3 +16,4 @@ torchaudio
 speechbrain
 ruamel.yaml
 transformers
+scrapetube
