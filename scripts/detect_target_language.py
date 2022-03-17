@@ -68,11 +68,6 @@ class DetectTargetLanguage():
         # simple nlp/regex to clean up the text title
         youtube_vid_title = re.sub(r'[^a-zA-Z ]', ' ', youtube_vid_title).lower()
         youtube_vid_title = ' '.join(youtube_vid_title.split())
-        print()
-        print()
-        print(youtube_vid_title)
-        print()
-        print()
         
         # get the encoding, outputs and logits
         # refer to: https://discuss.huggingface.co/t/decoding-the-predicted-output-array-in-distilbertbase-uncased-model-for-ner/10673

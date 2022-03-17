@@ -15,7 +15,6 @@ import os
 from detect_target_language import DetectTargetLanguage
 from sample_audio import AudioSampling
 
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Downloading videos with subtitle.",
