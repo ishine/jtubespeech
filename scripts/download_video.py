@@ -27,8 +27,8 @@ def parse_args():
                         help="filename of list of video IDs with subtitles")
     parser.add_argument("--threshold",     type=float,
                         default=0.7, help="probability threshold to determine if it is target language")
-    parser.add_argument("--check_audio_only",  action='store_true',
-                        default=False, help="check if video title's language needs to be checked")
+    parser.add_argument("--check_audio_and_title",  action='store_true',
+                        default=False, help="check if video's title and audio needs to be checked")
     parser.add_argument("--outdir",     type=str,
                         default="video", help="dirname to save videos")
     parser.add_argument("--keeporg",    action='store_true',
@@ -67,22 +67,18 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
                                                    language_code=args.lang,
                                                    threshold=args.threshold)
         
-        if args.check_audio_only:
-            # still need this function to rename the audio file
-            renaming = predict_target_lang.get_video_title_and_rename_audio()
-
-        else:
+        if args.check_audio_and_title:
             try:
                 # this checks the youtube video title if it is the same as the target language
                 check_text = predict_target_lang.check_target_language_video_title()
+                # this checks if the audio scraped is the same as the target language
+                check_audio = predict_target_lang.check_target_language_audio()
             except:
                 continue # error in scraping info
 
-        # check the audio
-        try:
-            check_audio = predict_target_lang.check_target_language_audio()
-        except RuntimeError: # error in scraping info
-            continue
+        else:
+            # still need this function to rename the audio file
+            renaming = predict_target_lang.get_video_title_and_rename_audio()
 
         # remove the .opus audio file from root folder
         for item in os.listdir('.'):
@@ -91,11 +87,7 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
 
         # IF THE SAMPLED AUDIO FILE'S PREDICTED LANGUAGE IS THE TARGET LANGUAGE, CONTINUE TO DOWNLOAD THE AUDIO
         # ELSE, DO NOT DOWNLOAD THE AUDIO AND GO TO THE NEXT ITERATION
-
-        if args.check_audio_only:
-            if not check_audio:
-                continue
-        else:
+        if args.check_audio_and_title:
             if not (check_text and check_audio):
                 continue
 
