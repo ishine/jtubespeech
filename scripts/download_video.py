@@ -55,19 +55,18 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
     success_count = 0
 
     for videoid in tqdm(sub[sub["sub"] == True]["videoid"]):  # manual subtitle only
-
-        ## ADDITIONAL CODES TO CHECK IF AUDIO (AND MAYBE TEXT) IS TARGET LANGUAGE OR NOT
-
-        # SAMPLE THE AUDIO
-        sample_aud = AudioSampling(url_id=videoid)
-        sample_aud()
-
-        # CHECK IF THE AUDIO IS THE TARGET TRANSCRIPT LANGUAGE
-        predict_target_lang = DetectTargetLanguage(url_id=videoid, 
-                                                   language_code=args.lang,
-                                                   threshold=args.threshold)
         
+        ## ADDITIONAL CODES TO CHECK IF AUDIO AND TEXT ARE TARGET LANGUAGE OR NOT
         if args.check_audio_and_title:
+
+            # SAMPLE THE AUDIO
+            sample_aud = AudioSampling(url_id=videoid)
+            sample_aud()
+
+            # CHECK IF THE AUDIO IS THE TARGET TRANSCRIPT LANGUAGE
+            predict_target_lang = DetectTargetLanguage(url_id=videoid, 
+                                                    language_code=args.lang,
+                                                    threshold=args.threshold)
             try:
                 # this checks the youtube video title if it is the same as the target language
                 check_text = predict_target_lang.check_target_language_video_title()
@@ -76,18 +75,13 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
             except:
                 continue # error in scraping info
 
-        else:
-            # still need this function to rename the audio file
-            renaming = predict_target_lang.get_video_title_and_rename_audio()
+            # remove the .opus audio file from root folder
+            for item in os.listdir('.'):
+                if item.endswith('.opus'):
+                    os.remove(item)
 
-        # remove the .opus audio file from root folder
-        for item in os.listdir('.'):
-            if item.endswith('.opus'):
-                os.remove(item)
-
-        # IF THE SAMPLED AUDIO FILE'S PREDICTED LANGUAGE IS THE TARGET LANGUAGE, CONTINUE TO DOWNLOAD THE AUDIO
-        # ELSE, DO NOT DOWNLOAD THE AUDIO AND GO TO THE NEXT ITERATION
-        if args.check_audio_and_title:
+            # IF THE SAMPLED AUDIO FILE'S PREDICTED LANGUAGE IS THE TARGET LANGUAGE, CONTINUE TO DOWNLOAD THE AUDIO
+            # ELSE, DO NOT DOWNLOAD THE AUDIO AND GO TO THE NEXT ITERATION
             if not (check_text and check_audio):
                 continue
 
