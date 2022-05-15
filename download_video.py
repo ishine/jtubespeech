@@ -11,10 +11,6 @@ import pandas as pd
 from tqdm import tqdm
 import os
 
-# self defined modules
-from detect_target_language import DetectTargetLanguage
-from sample_audio import AudioSampling
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Downloading videos with subtitle.",
@@ -24,16 +20,11 @@ def parse_args():
                         help="language code (ja, en, ...)")
     parser.add_argument("sublist",      type=str,
                         help="filename of list of video IDs with subtitles")
-    parser.add_argument("--threshold",     type=float,
-                        default=0.7, help="probability threshold to determine if it is target language")
-    parser.add_argument("--check_audio_and_title",  action='store_true',
-                        default=False, help="check if video's title and audio needs to be checked")
     parser.add_argument("--outdir",     type=str,
                         default="video", help="dirname to save videos")
     parser.add_argument("--keeporg",    action='store_true',
                         default=False, help="keep original audio file.")
     return parser.parse_args(sys.argv[1:])
-
 
 def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
     """
@@ -54,36 +45,6 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
     success_count = 0
 
     for videoid in tqdm(sub[sub["sub"] == True]["videoid"]):  # manual subtitle only
-        
-        ## ADDITIONAL CODES TO CHECK IF AUDIO AND TEXT ARE TARGET LANGUAGE OR NOT
-        if args.check_audio_and_title:
-
-            # SAMPLE THE AUDIO
-            sample_aud = AudioSampling(url_id=videoid)
-            sample_aud()
-
-            # CHECK IF THE AUDIO IS THE TARGET TRANSCRIPT LANGUAGE
-            predict_target_lang = DetectTargetLanguage(url_id=videoid, 
-                                                    language_code=args.lang,
-                                                    threshold=args.threshold)
-            try:
-                # this checks the youtube video title if it is the same as the target language
-                check_text = predict_target_lang.check_target_language_video_title()
-                # this checks if the audio scraped is the same as the target language
-                check_audio = predict_target_lang.check_target_language_audio()
-            except:
-                continue # error in scraping info
-
-            # remove the .opus audio file from root folder
-            for item in os.listdir('.'):
-                if item.endswith('.opus'):
-                    os.remove(item)
-
-            # IF THE SAMPLED AUDIO FILE'S PREDICTED LANGUAGE IS THE TARGET LANGUAGE, CONTINUE TO DOWNLOAD THE AUDIO
-            # ELSE, DO NOT DOWNLOAD THE AUDIO AND GO TO THE NEXT ITERATION
-            if not (check_text and check_audio):
-                continue
-
         fn = {}
         for k in ["wav", "wav16k", "vtt", "txt"]:
             fn[k] = Path(outdir) / lang / k / \
