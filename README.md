@@ -101,8 +101,22 @@ To read in the Channel ID text file, with all the target channel ID, and output 
 `sleep`: [optional] (int) how many seconds to sleep between API calls to youtube, in order to prevent getting blocked   
    
 #### Return
-None   
+None  
 
+#### Before Executing the code
+**TODO: Continue from here**   
+
+#### Executing the code
+To execute the code, go to this repository and enter into the docker container (refer above for the command). Inside the docker container, execute the following command:   
+```shell
+cd /jtubespeech/scripts
+chmod 777 get_video_id.sh
+./get_video_id.sh
+```
+  
+There will be an example bash script `get_video_id.sh` with example inputs to illustrate the example above.   
+
+## Check Subtitle Exists
 **TODO: Continue from here**   
    
 ## Contributors of the main JtubeSpeech repository
