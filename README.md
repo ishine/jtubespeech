@@ -1,5 +1,7 @@
 # JTubeSpeech YouTube Audio and Transcript Scraper Pipeline
-A forked repository that scrapes the audio and transcripts from youtube videos based on youtube's channel ID using the `youtube-dl` library. This scraping pipeline have slight differences from the main repository of JTubeSpeech. Please refer to the official [JTubeSpeech](https://github.com/sarulab-speech/jtubespeech) for the original implementation if you are interested.
+A forked repository that scrapes the audio and transcripts from youtube videos based on youtube's channel ID using the `youtube-dl` library. This scraping pipeline have slight differences from the main repository of JTubeSpeech. Please refer to the official [JTubeSpeech](https://github.com/sarulab-speech/jtubespeech) for the original implementation if you are interested.   
+
+In this repository, we focus only on manual transcriptions and ignore the auto-generated ones as they are inaccurate.   
 
 ## Introduction
 ### Tasks in this pipeline
@@ -8,7 +10,7 @@ The tasks in this pipeline are as follows:
 2. [Get Video ID from Channel ID](#get-video-id-from-channel-id)
 3. [Check Subtitle Exists](#check-subtitle-exists)
 4. [Pruning and Batching of Video ID](#pruning-and-batching-of-video-id)
-5. [Download Video and Transcripts](#download-video-and-transcripts) 
+5. [Download Videos and Transcripts](#download-videos-and-transcripts) 
 6. [Data Preprocessing](#data-preprocessing)
     
 Note that some of the codes here will require the ISO 639-1 language code of the target audio and transcript language that you want to scrape. You can get the ISO 639-1 language code of all the languages [here](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes).
@@ -74,7 +76,7 @@ The Channel ID in this case will be the one underlined in green, which is `UCehF
 cd /jtubespeech/channel_id
 mkdir <YOUR_LANGUAGE_ID>  # if it is indonesian, then can skip it since there is already an example .txt file containing the channel id of the indonesian language domain
 cd <YOUR_LANGUAGE_ID>
-vi <YOUR_TEXT_FILENAME_CONTAINING_YOUR_CHANNEL_ID>.txt (proceed to paste the channel ID in the text file)
+vi <YOUR_TEXT_FILENAME_CONTAINING_YOUR_CHANNEL_ID>.txt # proceed to paste the channel ID in the text file
 ```
    
 There will be an example text file with some channel ID in this repository, at `./jtubespeech/channel_id/id/id_1.txt` (indonesian language domain channels).   
@@ -91,9 +93,9 @@ As such, an extra step of inspecting the web element is required. You can do so 
 You can then copy the Channel ID from the web elements and proceed to add it into the text file.   
     
 ## Get Video ID from Channel ID   
-To read in the Channel ID text file, with all the target channel ID, and output all the Video ID of the channels into another text file.   
+To read in the Channel ID text file that has all the target channel IDs, and output all the Video IDs of the channels into another text file.   
    
-#### Arguments
+#### Arguments - `get_video_id.py`
 `channel_id`: (str) the input channel .txt filepath with all the target Channel IDs   
 `video_id`: (str) the output video .txt filepath with all the Video IDs in the channel   
 `is_limit`: [optional] (bool) to check if there is a limit to the scrape per channel   
@@ -104,7 +106,17 @@ To read in the Channel ID text file, with all the target channel ID, and output 
 None  
 
 #### Before Executing the code
-**TODO: Continue from here**   
+Check your inputs of the bash script `/jtubespeech/scripts/get_video_id.sh`. A template of the script is as show below  
+```shell
+#!/bin/bash
+
+CHANNEL_ID_TEXT_FILEPATH="<YOUR_CHANNEL_ID_TEXT_FILEPATH>"
+VIDEO_ID_TEXT_FILEPATH="<YOUR_VIDEO_ID_TEXT_FILEPATH>"
+
+python3 ../get_video_id.py \
+    --channel_id "../${CHANNEL_ID_TEXT_FILEPATH}" \
+    --video_id "../${VIDEO_ID_TEXT_FILEPATH}"
+```
 
 #### Executing the code
 To execute the code, go to this repository and enter into the docker container (refer above for the command). Inside the docker container, execute the following command:   
@@ -113,13 +125,119 @@ cd /jtubespeech/scripts
 chmod 777 get_video_id.sh
 ./get_video_id.sh
 ```
-  
-There will be an example bash script `get_video_id.sh` with example inputs to illustrate the example above.   
+   
+The bash script `/jtubespeech/scripts/get_video_id.sh` has example inputs to illustrate the example above.   
 
 ## Check Subtitle Exists
-**TODO: Continue from here**   
+To check whether the videos have the targeted language subtitles or not. The availability of manual and auto-generated subtitles of the videos will be made known when the script is executed.   
    
-## Contributors of the main JtubeSpeech repository
+#### Arguments - `check_subtitle_exists.py`  
+`language`: (str) the targeted language code (ISO 639-1) (eg. ja, en, ...)  
+`video_id_list`: (str) filename of video ID text file   
+`main_outdir`: (str) main output directory    
+`sub_outdir`: (str) sub output directory   
+`sub_sub_outdir`: (str) sub sub output directory   
+`csv_filepath`: (str) filepath of the final csv file   
+`checkpoint`: [optional] (str) filename of list checkpoint (for restart retrieving)   
+   
+#### Return
+The filepath of the final csv file
+   
+#### Before Executing the code
+Check your inputs of the bash script `/jtubespeech/scripts/check_subtitle_exists.sh`. A template of the script is as show below  
+```shell
+#!/bin/bash
+
+LANGUAGE="<YOUR_LANGUAGE_ID>"
+VIDEO_ID_LIST="<YOUR_VIDEO_ID_TEXT_FILEPATH>"
+MAIN_DIR="video_id_with_sub" # can standardize with this directory name
+SUB_SUB_DIR="<YOUR_VIDEO_ID_TEXT_FILENAME>" # can standardize with this directory name
+
+python3 ../check_subtitle_exists.py \
+    --language ${LANGUAGE} \
+    --video_id_list "../${VIDEO_ID_LIST}" \
+    --main_outdir "../${MAIN_DIR}/" \
+    --sub_outdir "../${MAIN_DIR}/${LANGUAGE}/" \
+    --sub_sub_outdir "../${MAIN_DIR}/${LANGUAGE}/${SUB_SUB_DIR}/" \
+    --csv_filepath "../${MAIN_DIR}/${LANGUAGE}/${SUB_SUB_DIR}/${SUB_SUB_DIR}.csv"
+```   
+   
+#### Executing the code
+To execute the code, go to this repository and enter into the docker container (refer above for the command). Inside the docker container, execute the following command:   
+```shell
+cd /jtubespeech/scripts
+chmod 777 check_subtitle_exists.sh
+./check_subtitle_exists.sh
+```
+   
+## Pruning and Batching of Video ID
+To prune away those video IDs that does not have manual subtitles, then split the remaining video IDs into multiple csv files. The number of video ID entries per csv is controllable. The splitted csv files will be in the same directory as the csv file that is yet to be splitted. Doing so allows the ability to download the audio and transcripts in batches (shown in the next section). Hence, it reduces the risk of long execution time to download the audio and transcripts all at once.   
+   
+#### Arguments - `batching.py`  
+`language`: (str) the targeted language code (ISO 639-1) (eg. ja, en, ...)  
+`raw_csv`: (str) filepath of the raw csv that is yet to be splitted  
+`entries`: [optional] (int) number of entries per csv file, if not stated, the default will be 50 entries per csv file    
+    
+#### Return
+None  
+
+#### Before Executing the code
+Check your inputs of the bash script `/jtubespeech/scripts/batching.sh`. A template of the script is as show below  
+```shell
+#!/bin/bash
+
+LANGUAGE="<YOUR_LANGUAGE_ID>"
+INPUT_CSV_FILEPATH="<THE_FILEPATH_OF_THE_CSV_GENERATED_FROM_THE_PREVIOUS_PHASE>"
+ENTRIES_PER_CSV_BATCH=<NUMBER_OF_VIDEO_IDS_PER_CSV_BATCH>
+
+python3 ../batching.py \
+    --language ${LANGUAGE} \
+    --raw_csv "../${INPUT_CSV_FILEPATH}" \
+    --entries ${ENTRIES_PER_CSV_BATCH}
+```  
+  
+To execute the code, go to this repository and enter into the docker container (refer above for the command). Inside the docker container, execute the following command:   
+```shell
+cd /jtubespeech/scripts
+chmod 777 batching.sh
+./batching.sh
+```
+  
+## Download Videos and Transcripts
+Reads the batched csv files generated earlier, takes in the Video ID, then downloads the audio and the transcript.   
+   
+#### Arguments - `download_video.py`  
+`language`: (str) the targeted language code (ISO 639-1) (eg. ja, en, ...)  
+`sublist`: (str) batched csv file with a list of video IDs with subtitles   
+`outdir`: (str) the root directory where the audio and the corresponding transcript are saved   
+`keeporg`: [optional] (bool) to keep or not to keep the original audio file, default False  
+    
+#### Return
+The root folder where the audios and transcripts are being saved.   
+   
+#### Before Executing the code
+Check your inputs of the bash script `/jtubespeech/scripts/download_video.sh`. A template of the script is as show below  
+```shell
+#!/bin/bash
+
+LANGUAGE="<YOUR_LANGUAGE_ID>"
+BATCH_CSV_FILE="<FILEPATH_TO_THE_BATCH_CSV>"
+OUTPUT_DIR="video" # can fix this output directory
+
+python3 ../download_video.py \
+    --language ${LANGUAGE} \
+    --sublist ${BATCH_CSV_FILE} \
+    --outdir ${OUTPUT_DIR}
+```  
+   
+To execute the code, go to this repository and enter into the docker container (refer above for the command). Inside the docker container, execute the following command:   
+```shell
+cd /jtubespeech/scripts
+chmod 777 download_video.sh
+./download_video.sh
+```
+   
+## Contributors of the main JTubeSpeech repository
 - [Shinnosuke Takamichi](https://sites.google.com/site/shinnosuketakamichi/home) (The University of Tokyo, Japan) [main contributor]
 - [Ludwig Kürzinger](https://www.ei.tum.de/mmk/personen/mitarbeiter/ludwig-kuerzinger/) (Technical University of Munich, Germany)
 - [Takaaki Saeki](https://takaaki-saeki.github.io/) (The University of Tokyo, Japan)
