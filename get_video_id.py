@@ -35,12 +35,14 @@ class GetVideoId():
         self.is_limit = is_limit
 
     def get_video_id(self):
-        # check if the video id filename exists, if exists, delete it to prevent corruption in appending to the text file
-        if os.path.isfile(self.video_id):
-            os.remove(self.video_id)
+        # # check if the video id filename exists, if exists, delete it to prevent corruption in appending to the text file
+        # if os.path.isfile(self.video_id):
+        #     os.remove(self.video_id)
+
+        # check if the video id filename exists, if exists, throw an error to prevent corruption in appending to the text file
+        assert not os.path.isfile(self.video_id), "video id filename already exists, please insert an alternative filename!"
 
         # read the channel_id text file to get the channel ids
-        
         with open(self.channel_id, 'r+') as f:
             for line in f.readlines():
 
