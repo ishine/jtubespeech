@@ -1,4 +1,3 @@
-#scripts/*
 word/*
 sub/*
 videoid/*
@@ -11,3 +10,4 @@ word-small/*
 *.opus
 tmp/*
 video_1_channel_testing/*
+.gitattributes
