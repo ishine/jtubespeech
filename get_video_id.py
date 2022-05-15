@@ -10,9 +10,9 @@ def parse_args():
         description="get video id (output) from channel id (input)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("channel_id",    type=str,
+    parser.add_argument("--channel_id",    type=str,
                         help="the location to read the channel_id text file")
-    parser.add_argument("video_id",    type=str,
+    parser.add_argument("--video_id",    type=str,
                         help="the location to write to the video_id text file")
     parser.add_argument("--is_limit",  action='store_true',
                         default=False, help="check if there is a limit to the scrape per channel")

@@ -77,8 +77,8 @@ if __name__ == '__main__':
     args = parse_args()
     dirname_path = os.path.dirname(args.raw_csv)
     df_batching = DataframePruningAndBatching(lang_code=args.lang, 
-                                                     source_csv_path=args.raw_csv, 
-                                                     dest_dir=f'{dirname_path}/csv_batch/', 
-                                                     entries_per_csv=args.entries)
+                                              source_csv_path=args.raw_csv, 
+                                              dest_dir=f'{dirname_path}/csv_batch/', 
+                                              entries_per_csv=args.entries)
 
     df_batching()
