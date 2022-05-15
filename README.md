@@ -237,6 +237,13 @@ chmod 777 download_video.sh
 ./download_video.sh
 ```
    
+## Data Preprocessing
+To preprocess the scraped jtubespeech data into a more standardized format   
+   
+#### Arguments
+**TODO: CONTINUE THE README AFTER TRANSFERRING THE DATA PREPROCESSING CODE HERE**    
+    
+   
 ## Contributors of the main JTubeSpeech repository
 - [Shinnosuke Takamichi](https://sites.google.com/site/shinnosuketakamichi/home) (The University of Tokyo, Japan) [main contributor]
 - [Ludwig Kürzinger](https://www.ei.tum.de/mmk/personen/mitarbeiter/ludwig-kuerzinger/) (Technical University of Munich, Germany)
