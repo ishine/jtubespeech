@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument("--language",         type=str,
                         help="language code (ISO 639-1) (ja, en, ...)")
     parser.add_argument("--sublist",      type=str,
-                        help="filename of list of video IDs with subtitles")
+                        help="batched csv file with a list of video IDs with subtitles")
     parser.add_argument("--outdir",     type=str,
                         default="video", help="dirname to save videos")
     parser.add_argument("--keeporg",    action='store_true',

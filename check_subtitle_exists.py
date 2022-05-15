@@ -16,7 +16,7 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--language",         type=str,
-                        help="language code (ISO 639-1) (eg. ja, en, ...)")
+                        help="the targeted language code (ISO 639-1) (eg. ja, en, ...)")
     parser.add_argument("--video_id_list",  type=str,
                         help="filename of video ID list")
     parser.add_argument("--main_outdir",     type=str,
