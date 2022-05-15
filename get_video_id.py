@@ -27,20 +27,26 @@ def parse_args():
 # input: channel_id (manual text file)
 # output: video_id
 class GetVideoId:
-    def __init__(self, channel_id, video_id, limit, sleep, is_limit):
+    '''
+        a class that takes in the channel_id text file, where the channel_id are manually added from youtube, and outputs all the video ids in the video_id text file
+    '''
+    def __init__(self, channel_id: str, video_id: str, limit: int, sleep: float, is_limit: bool) -> None:
         self.channel_id = channel_id
         self.video_id = video_id
         self.limit = limit
         self.sleep = sleep
         self.is_limit = is_limit
 
-    def get_video_id(self):
+    def get_video_id(self) -> None:
+        '''
+            gets the channel id text file and outputs the video id text file
+        '''
         # # check if the video id filename exists, if exists, delete it to prevent corruption in appending to the text file
         # if os.path.isfile(self.video_id):
         #     os.remove(self.video_id)
 
-        # check if the video id filename exists, if exists, throw an error to prevent corruption in appending to the text file
-        assert not os.path.isfile(self.video_id), "video id filename already exists, please insert an alternative filename!"
+        # check if the video id filename exists, if it exists, throw an error to prevent corruption in appending to the text file
+        assert not os.path.isfile(self.video_id), "video id filename already exists, please insert an alternative filename to avoid confusion!"
 
         # read the channel_id text file to get the channel ids
         with open(self.channel_id, 'r+') as f:
