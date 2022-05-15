@@ -12,9 +12,9 @@ def parse_args():
     description="Retrieving whether subtitles exists or not.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
   )
-  parser.add_argument("lang",         type=str, help="language code (ja, en, ...)")
-  parser.add_argument("raw_csv",      type=str, help="filename of the raw csv that is yet to be splitted")  
-  parser.add_argument("--entries",    type=int, default=50, help="number of entries per csv file")
+  parser.add_argument("--language",     type=str, help="language code (ISO 639-1) (ja, en, ...)")
+  parser.add_argument("--raw_csv",      type=str, help="filename of the raw csv that is yet to be splitted")  
+  parser.add_argument("--entries",      type=int, default=50, help="number of entries per csv file")
   return parser.parse_args(sys.argv[1:])
 
 class DataframePruningAndBatching():
@@ -34,8 +34,9 @@ class DataframePruningAndBatching():
         # reoder the dataframe by the 'auto' column
         df = df.sort_values(by=['auto'], ascending=True)
 
-        # create new subdirectory in the 'sub' main folder
-        self.create_new_dir()
+        # UNCOMMENT IF YOU WANT THE BATCHES OF CSV TO BE IN A SUBDIRECTORY FROM THE MAIN CSV
+        # # create new subdirectory in the raw csv folder
+        # self.create_new_dir()
 
         # split the csv files into batches of csv files
         self.split_into_batches(df)
@@ -47,16 +48,17 @@ class DataframePruningAndBatching():
                 df_batch = df.iloc[batch*self.entries_per_csv: (batch+1)*self.entries_per_csv]
             else:
                 df_batch = df.iloc[batch*self.entries_per_csv:]
-            df_batch.to_csv(f'{self.dest_dir}{self.lang_code}_{batch+1}.csv', index=False)
+            df_batch.to_csv(f'{self.dest_dir}{self.lang_code}_batch_{batch+1}.csv', index=False)
             print(f'Batch {batch+1}: Done')
         print('Done!')
 
-    # create new directory and ignore already created ones
-    def create_new_dir(self):
-        try:
-            os.mkdir(self.dest_dir)
-        except OSError as error:
-            pass # directory already exists!
+    # UNCOMMENT IF YOU WANT THE BATCHES OF CSV TO BE IN A SUBDIRECTORY FROM THE MAIN CSV
+    # # create new directory and ignore already created ones
+    # def create_new_dir(self):
+    #     try:
+    #         os.mkdir(self.dest_dir)
+    #     except OSError as error:
+    #         pass # directory already exists!
 
     def __call__(self):
         return self.remove_unwanted_row()
@@ -75,10 +77,10 @@ if __name__ == '__main__':
     
     # passing arguments
     args = parse_args()
-    dirname_path = os.path.dirname(args.raw_csv)
-    df_batching = DataframePruningAndBatching(lang_code=args.lang, 
+  
+    df_batching = DataframePruningAndBatching(lang_code=args.language, 
                                               source_csv_path=args.raw_csv, 
-                                              dest_dir=f'{dirname_path}/csv_batch/', 
+                                              dest_dir=os.path.dirname(args.raw_csv), 
                                               entries_per_csv=args.entries)
 
     df_batching()

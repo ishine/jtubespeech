@@ -16,9 +16,9 @@ def parse_args():
         description="Downloading videos with subtitle.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("lang",         type=str,
-                        help="language code (ja, en, ...)")
-    parser.add_argument("sublist",      type=str,
+    parser.add_argument("--language",         type=str,
+                        help="language code (ISO 639-1) (ja, en, ...)")
+    parser.add_argument("--sublist",      type=str,
                         help="filename of list of video IDs with subtitles")
     parser.add_argument("--outdir",     type=str,
                         default="video", help="dirname to save videos")
@@ -110,5 +110,8 @@ def download_video(lang, fn_sub, outdir="video", wait_sec=10, keep_org=False):
 if __name__ == "__main__":
     args = parse_args()
 
-    dirname = download_video(args.lang, args.sublist, args.outdir)
+    dirname = download_video(lang=args.language, 
+                             fn_sub=args.sublist, 
+                             outdir=args.outdir)
+
     print(f"save {args.lang.upper()} videos to {dirname}.")
