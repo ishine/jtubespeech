@@ -22,10 +22,12 @@ def parse_args():
                         help="filename of video ID list")
     parser.add_argument("--main_outdir",     type=str,
                         default="video_id_with_sub", help="main output directory")
-    parser.add_argument("--sub_outdir",     type=str,
-                        default="video_id_with_sub", help="sub output directory")
+    parser.add_argument("--sub_outdir",     type=str, 
+                        help="sub output directory")
     parser.add_argument("--sub_sub_outdir",     type=str,
-                        default="video_id_with_sub", help="sub sub output directory")
+                        help="sub sub output directory")
+    parser.add_argument("--csv_filepath",     type=str,
+                        help="filepath of the final csv file")
     parser.add_argument("--checkpoint", type=str, default=None,
                         help="filename of list checkpoint (for restart retrieving)")
     return parser.parse_args(sys.argv[1:])
