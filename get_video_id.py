@@ -23,9 +23,6 @@ def parse_args():
     return parser.parse_args(sys.argv[1:])
 
 
-# get video id from channel id (manually added textfile)
-# input: channel_id (manual text file)
-# output: video_id
 class GetVideoId:
     '''
         a class that takes in the channel_id text file, where the channel_id are manually added from youtube, and outputs all the video ids in the video_id text file
