@@ -9,7 +9,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get update \
 && apt-get upgrade -y \
 && apt-get install -y \
-&& apt-get -y install build-essential git apt-utils gcc libpq-dev libsndfile1 ffmpeg sox wget youtube-dl python3-pip \
+&& apt-get -y install build-essential git apt-utils gcc libpq-dev libsndfile1 ffmpeg sox wget youtube-dl python3-pip vim \
 && rm -rf /var/lib/apt/lists/*
 
 # Keeps Python from generating .pyc files in the container
