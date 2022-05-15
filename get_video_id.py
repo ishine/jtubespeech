@@ -26,7 +26,7 @@ def parse_args():
 # get video id from channel id (manually added textfile)
 # input: channel_id (manual text file)
 # output: video_id
-class GetVideoId():
+class GetVideoId:
     def __init__(self, channel_id, video_id, limit, sleep, is_limit):
         self.channel_id = channel_id
         self.video_id = video_id
