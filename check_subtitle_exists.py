@@ -10,7 +10,6 @@ from util import make_video_url, get_subtitle_language
 import pandas as pd
 from tqdm import tqdm
 
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Retrieving whether subtitles exists or not.",
