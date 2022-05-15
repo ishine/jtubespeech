@@ -101,7 +101,7 @@ To read in the Channel ID text file, with all the target channel ID, and output 
 `sleep`: [optional] (int) how many seconds to sleep between API calls to youtube, in order to prevent getting blocked   
    
 #### Return
-None, but outputs the text file with all the Video ID
+None   
 
 **TODO: Continue from here**   
    
