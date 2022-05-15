@@ -22,8 +22,6 @@ ENV PYTHONUNBUFFERED 1
 ADD requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 RUN pip install --upgrade ruamel.yaml --ignore-installed ruamel.yaml
-#RUN git clone https://github.com/espnet/espnet
-#RUN cd espnet && python3 -m pip install --no-cache-dir .
 
 WORKDIR /jtubespeech
 RUN ["bash"]
