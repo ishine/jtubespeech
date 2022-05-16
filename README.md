@@ -265,7 +265,7 @@ To preprocess the scraped jtubespeech data into a more standardized format. This
 `audio_format`: (str) the audio format of the exported preprocessed audio    
      
 #### Return
-None.   
+None   
     
 #### Before Executing the code
 Check your inputs of the bash script `/jtubespeech/scripts/data_preprocessing.sh`. A template of the script is as show below  
