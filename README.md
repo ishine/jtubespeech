@@ -40,16 +40,21 @@ TODO: UPDATE THE TREE STRUCTURE
 ### Getting Started - Via Docker
 **Preferably, a Linux OS should be used**   
 1. Ensure that docker is installed in your computer   
-2. Clone this repository  
+2. Go to [Docker Hub](https://hub.docker.com/). Create/login to your account   
+3. Open the terminal, execute the following command to pull the base image of this Dockerfile. You may be required to login to your Docker Hub account again from the terminal   
+```shell
+docker pull python:3.8.13-slim-buster
+```
+4. Clone this repository  
 ```shell
 git clone https://github.com/nicholasneo78/jtubespeech
 ```
-3. Open the terminal and go to the root directory of this repository  
-4. Build the Dockerfile that is created in the repository using the docker-compose.yml file
+5. Open the terminal and go to the root directory of this repository  
+6. Build the Dockerfile that is created in the repository using the docker-compose.yml file
 ```shell
 docker-compose up --build -d
 ```
-5. After building the docker image, check if the image is successfully built, by typing the following command
+7. After building the docker image, check if the image is successfully built, by typing the following command
 ```shell
 docker images
 ```
@@ -170,6 +175,8 @@ chmod 777 check_subtitle_exists.sh
 ./check_subtitle_exists.sh
 ```
    
+The bash script `/jtubespeech/scripts/check_subtitle_exists.sh` has example inputs to illustrate the example above.    
+   
 ## Pruning and Batching of Video ID
 To prune away those video IDs that does not have manual subtitles, then split the remaining video IDs into multiple csv files. The number of video ID entries per csv is controllable. The splitted csv files will be in the same directory as the csv file that is yet to be splitted. Doing so allows the ability to download the audio and transcripts in batches (shown in the next section). Hence, it reduces the risk of long execution time to download the audio and transcripts all at once.   
    
@@ -202,7 +209,9 @@ cd /jtubespeech/scripts
 chmod 777 batching.sh
 ./batching.sh
 ```
-  
+   
+The bash script `/jtubespeech/scripts/batching.sh` has example inputs to illustrate the example above.    
+   
 ## Download Videos and Transcripts
 Reads the batched csv files generated earlier, takes in the Video ID, then downloads the audio and the transcript.   
    
@@ -236,7 +245,9 @@ cd /jtubespeech/scripts
 chmod 777 download_video.sh
 ./download_video.sh
 ```
-   
+    
+The bash script `/jtubespeech/scripts/download_video.sh` has example inputs to illustrate the example above.    
+    
 ## Data Preprocessing
 To preprocess the scraped jtubespeech data into a more standardized format   
    
