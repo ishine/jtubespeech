@@ -1,9 +1,25 @@
 import os
-import yaml
 import tarfile
+import sys
+import argparse
 from tqdm import tqdm
 from pathlib import Path
 from utils_jtubespeech import RestructureFileDirectoryJtubespeech, UtilsJtubespeech
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="To preprocess the scraped jtubespeech data into a more standardized format.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("--root_folder",                type=str, help="the folder where the raw vtt and wav16k folder resides")
+    parser.add_argument("--dest_folder_name",           type=str, help="the directory name created to store the restructured data for the preprocessing task")
+    parser.add_argument("--file_type_vtt",              type=str, help="file type of the folder name needed to extract the transcript")
+    parser.add_argument("--file_type_wav",              type=str, help="file type of the folder name needed to extract the raw audio")
+    parser.add_argument("--main_data_folder",           type=str, help="main data folder with all the raw data that is to be processed")
+    parser.add_argument("--preprocessed_data_folder",   type=str, help="new directory name for the preprocessed data")
+    parser.add_argument("--audio_format",               type=str, help="the audio format of the exported preprocessed audio")
+    
+    return parser.parse_args(sys.argv[1:])
 
 class DataPreprocessingJtubespeech:
     
@@ -59,27 +75,25 @@ class DataPreprocessingJtubespeech:
 
 
 if __name__ == '__main__':
-
-    # CONFIG IMPORTED FROM .YAML FILE
-    with open('./config/config_jtubespeech.yaml') as f:
-        config = yaml.safe_load(f)
     
-    ## RESTRUCTURING THE JTUBESPEECH DATA FILE DIRECTORY
-    file_combine_vtt = RestructureFileDirectoryJtubespeech(root_folder=config['root_folder'], 
-                                                            dest_folder=config['dest_folder_name'], 
-                                                            file_type=config['file_type_vtt'])
+    args = parse_args()
 
-    file_combine_wav = RestructureFileDirectoryJtubespeech(root_folder=config['root_folder'], 
-                                                            dest_folder=config['dest_folder_name'],
-                                                            file_type=config['file_type_wav'])
+    ## RESTRUCTURING THE JTUBESPEECH DATA FILE DIRECTORY
+    file_combine_vtt = RestructureFileDirectoryJtubespeech(root_folder=args.root_folder, 
+                                                           dest_folder=args.dest_folder_name, 
+                                                           file_type=args.file_type_vtt)
+
+    file_combine_wav = RestructureFileDirectoryJtubespeech(root_folder=args.root_folder, 
+                                                           dest_folder=args.dest_folder_name,
+                                                           file_type=args.file_type_wav)
 
     file_combine_vtt()
     file_combine_wav()
 
     ## DATA PREPROCESSING OF THE JTUBESPEECH DATA TO THE LIBRISPEECH FORMAT
-    preprocess = DataPreprocessingJtubespeech(main_data_folder = config['main_data_folder'],
-                                              preprocessed_data_folder = config['preprocessed_data_folder'],
-                                              audio_format = config['audio_format'])
+    preprocess = DataPreprocessingJtubespeech(main_data_folder = args.main_data_folder,
+                                              preprocessed_data_folder = args.preprocessed_data_folder,
+                                              audio_format = args.audio_format)
 
     preprocess()
 
