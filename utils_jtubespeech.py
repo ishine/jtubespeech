@@ -6,7 +6,7 @@ from pydub import AudioSegment
 import webvtt
 import re
 
-class RestructureFileDirectoryJtubespeech():
+class RestructureFileDirectoryJtubespeech:
 
     def __init__(self, root_folder, dest_folder, file_type):
         self.root_folder = root_folder
@@ -46,7 +46,7 @@ class RestructureFileDirectoryJtubespeech():
         return self.combine_files_to_same_directory()
 
 
-class UtilsJtubespeech():
+class UtilsJtubespeech:
 
     def __init__(self, main_data_folder, preprocessed_data_folder, audio_format):
         self.main_data_folder = main_data_folder

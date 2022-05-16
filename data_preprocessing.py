@@ -7,7 +7,7 @@ from utils_jtubespeech import RestructureFileDirectoryJtubespeech
 from utils_jtubespeech import UtilsJtubespeech
 
 
-class DataPreprocessingJtubespeech():
+class DataPreprocessingJtubespeech:
     
     def __init__(self, main_data_folder, preprocessed_data_folder, audio_format):
         self.main_data_folder = main_data_folder
