@@ -15,4 +15,3 @@ python3 ../data_preprocessing.py \
     --main_data_folder ${MAIN_DATA_FOLDER} \
     --preprocessed_data_folder ${PREPROCESSED_DATA_FOLDER} \
     --audio_format ${AUDIO_FORMAT} 
-
