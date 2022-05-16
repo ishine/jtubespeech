@@ -202,7 +202,8 @@ python3 ../batching.py \
     --raw_csv "../${INPUT_CSV_FILEPATH}" \
     --entries ${ENTRIES_PER_CSV_BATCH}
 ```  
-  
+    
+#### Executing the code
 To execute the code, go to this repository and enter into the docker container (refer above for the command). Inside the docker container, execute the following command:   
 ```shell
 cd /jtubespeech/scripts
@@ -239,6 +240,7 @@ python3 ../download_video.py \
     --outdir ${OUTPUT_DIR}
 ```  
    
+#### Executing the code
 To execute the code, go to this repository and enter into the docker container (refer above for the command). Inside the docker container, execute the following command:   
 ```shell
 cd /jtubespeech/scripts
@@ -249,12 +251,53 @@ chmod 777 download_video.sh
 The bash script `/jtubespeech/scripts/download_video.sh` has example inputs to illustrate the example above.    
     
 ## Data Preprocessing
-To preprocess the scraped jtubespeech data into a more standardized format   
+To preprocess the scraped jtubespeech data into a more standardized format. This code splits into 2 parts:
+1. Restructure the JTubeSpeech data file directory such that the audio and transcript are placed together    
+2. Splitting the audio and transcript into utterance level    
    
-#### Arguments
-**TODO: CONTINUE THE README AFTER TRANSFERRING THE DATA PREPROCESSING CODE HERE**    
+#### Arguments - `data_preprocessing.py`  
+`root_folder`: (str) the folder where the raw vtt and wav16k folder resides   
+`dest_folder_name`: (str) the directory name created to store the restructured data for the preprocessing task    
+`file_type_vtt`: (str) file type of the folder name needed to extract the transcript    
+`file_type_wav`: (str) file type of the folder name needed to extract the raw audio  
+`main_data_folder`: (str) main data folder with all the raw data that is to be processed   
+`preprocessed_data_folder`: (str) new directory name for the preprocessed data     
+`audio_format`: (str) the audio format of the exported preprocessed audio    
+     
+#### Return
+None.   
     
-   
+#### Before Executing the code
+Check your inputs of the bash script `/jtubespeech/scripts/data_preprocessing.sh`. A template of the script is as show below  
+```shell
+#!/bin/bash
+ROOT_FOLDER="<THE_FOLDER_WHERE_THE_RAW_VTT_AND_WAV16K_FILES_RESIDE>"
+DEST_FOLDER_NAME="<DIRECTORY_NAME_CREATED_TO_STORE_THE_RESTRUCTURED_DATA>"
+FILE_TYPE_VTT="vtt"
+FILE_TYPE_WAV="wav16k"
+MAIN_DATA_FOLDER="${ROOT_FOLDER}/${DEST_FOLDER_NAME}"
+PREPROCESSED_DATA_FOLDER="<NEW_DIRECTORY_NAME_FOR_THE_PREPROCESSED_DATA>"
+AUDIO_FORMAT="<THE_AUDIO_FORMAT_OF_THE_PREPROCESSED_AUDIO>"
+
+python3 ../data_preprocessing.py \
+    --root_folder ${ROOT_FOLDER} \
+    --dest_folder_name ${DEST_FOLDER_NAME} \
+    --file_type_vtt ${FILE_TYPE_VTT} \
+    --file_type_wav ${FILE_TYPE_WAV} \
+    --main_data_folder ${MAIN_DATA_FOLDER} \
+    --preprocessed_data_folder ${PREPROCESSED_DATA_FOLDER} \
+    --audio_format ${AUDIO_FORMAT} 
+```  
+    
+#### Executing the code
+To execute the code, go to this repository and enter into the docker container (refer above for the command). Inside the docker container, execute the following command:   
+```shell
+cd /jtubespeech/scripts
+chmod 777 data_preprocessing.sh
+./data_preprocessing.sh
+```
+    
+    
 ## Contributors of the main JTubeSpeech repository
 - [Shinnosuke Takamichi](https://sites.google.com/site/shinnosuketakamichi/home) (The University of Tokyo, Japan) [main contributor]
 - [Ludwig Kürzinger](https://www.ei.tum.de/mmk/personen/mitarbeiter/ludwig-kuerzinger/) (Technical University of Munich, Germany)
