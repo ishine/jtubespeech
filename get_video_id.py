@@ -10,16 +10,12 @@ def parse_args():
         description="get video id (output) from channel id (input)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--channel_id",    type=str,
-                        help="the location to read the channel_id text file")
-    parser.add_argument("--video_id",    type=str,
-                        help="the location to write to the video_id text file")
-    parser.add_argument("--is_limit",  action='store_true',
-                        default=False, help="check if there is a limit to the scrape per channel")
-    parser.add_argument("--limit", type=int, default=50,
-                        help="scrape limit per channel of videoid")
-    parser.add_argument("--sleep", type=int, default=2,
-                        help="seconds to sleep between API calls to youtube, in order to prevent getting blocked")       
+    parser.add_argument("--channel_id",     type=str, help="the location to read the channel_id text file")
+    parser.add_argument("--video_id",       type=str, help="the location to write to the video_id text file")
+    parser.add_argument("--is_limit",       action='store_true', default=False, help="check if there is a limit to the scrape per channel")
+    parser.add_argument("--limit",          type=int, default=50, help="scrape limit per channel of videoid")
+    parser.add_argument("--sleep",          type=int, default=2, help="seconds to sleep between API calls to youtube, in order to prevent getting blocked")  
+
     return parser.parse_args(sys.argv[1:])
 
 

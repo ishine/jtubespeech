@@ -15,20 +15,14 @@ def parse_args():
         description="Retrieving whether subtitles exists or not.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--language",         type=str,
-                        help="the targeted language code (ISO 639-1) (eg. ja, en, ...)")
-    parser.add_argument("--video_id_list",  type=str,
-                        help="filename of video ID list")
-    parser.add_argument("--main_outdir",     type=str,
-                        default="video_id_with_sub", help="main output directory")
-    parser.add_argument("--sub_outdir",     type=str, 
-                        help="sub output directory")
-    parser.add_argument("--sub_sub_outdir",     type=str,
-                        help="sub sub output directory")
-    parser.add_argument("--csv_filepath",     type=str,
-                        help="filepath of the final csv file")
-    parser.add_argument("--checkpoint", type=str, default=None,
-                        help="filename of list checkpoint (for restart retrieving)")
+    parser.add_argument("--language",           type=str, help="the targeted language code (ISO 639-1) (eg. ja, en, ...)")
+    parser.add_argument("--video_id_list",      type=str, help="filename of video ID list")
+    parser.add_argument("--main_outdir",        type=str, default="video_id_with_sub", help="main output directory")
+    parser.add_argument("--sub_outdir",         type=str, help="sub output directory")
+    parser.add_argument("--sub_sub_outdir",     type=str, help="sub sub output directory")
+    parser.add_argument("--csv_filepath",       type=str, help="filepath of the final csv file")
+    parser.add_argument("--checkpoint",         type=str, default=None, help="filename of list checkpoint (for restart retrieving)")
+    
     return parser.parse_args(sys.argv[1:])
 
 def create_new_dir(directory: str) -> None:

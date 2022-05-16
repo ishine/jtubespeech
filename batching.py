@@ -15,6 +15,7 @@ def parse_args():
   parser.add_argument("--language",     type=str, help="the targeted language code (ISO 639-1) (ja, en, ...)")
   parser.add_argument("--raw_csv",      type=str, help="filepath of the raw csv that is yet to be splitted")  
   parser.add_argument("--entries",      type=int, default=50, help="number of entries per csv file")
+  
   return parser.parse_args(sys.argv[1:])
 
 class DataframePruningAndBatching():
