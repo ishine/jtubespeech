@@ -3,9 +3,7 @@ import yaml
 import tarfile
 from tqdm import tqdm
 from pathlib import Path
-from utils_jtubespeech import RestructureFileDirectoryJtubespeech
-from utils_jtubespeech import UtilsJtubespeech
-
+from utils_jtubespeech import RestructureFileDirectoryJtubespeech, UtilsJtubespeech
 
 class DataPreprocessingJtubespeech:
     
