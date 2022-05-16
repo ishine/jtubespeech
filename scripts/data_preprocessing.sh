@@ -3,7 +3,7 @@ ROOT_FOLDER="./datasets/jtubespeech/jtubespeech_data_small/id"
 DEST_FOLDER_NAME="annotated_data"
 FILE_TYPE_VTT="vtt"
 FILE_TYPE_WAV="wav16k"
-MAIN_DATA_FOLDER="datasets/jtubespeech/jtubespeech_data_small/id/annotated_data"
+MAIN_DATA_FOLDER= "${ROOT_FOLDER}/${DEST_FOLDER_NAME}" # "datasets/jtubespeech/jtubespeech_data_small/id/annotated_data"
 PREPROCESSED_DATA_FOLDER="datasets/jtubespeech/jtubespeech_data_small/id/annotated_data_preprocessed_wav"
 AUDIO_FORMAT="wav"
 
