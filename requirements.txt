@@ -17,3 +17,4 @@ speechbrain
 ruamel.yaml
 transformers
 scrapetube
+webvtt-py
