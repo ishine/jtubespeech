@@ -4,7 +4,7 @@ DEST_FOLDER_NAME="annotated_data_raw"
 FILE_TYPE_VTT="vtt"
 FILE_TYPE_WAV="wav16k"
 MAIN_DATA_FOLDER="${ROOT_FOLDER}/${DEST_FOLDER_NAME}"
-PREPROCESSED_DATA_FOLDER="${ROOT_FOLDER}/annotated_data"
+PREPROCESSED_DATA_FOLDER="annotated_data"
 AUDIO_FORMAT="wav"
 
 python3 data_preprocessing.py \
