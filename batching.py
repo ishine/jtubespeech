@@ -35,10 +35,6 @@ class DataframePruningAndBatching():
         # reoder the dataframe by the 'auto' column
         df = df.sort_values(by=['auto'], ascending=True)
 
-        # UNCOMMENT IF YOU WANT THE BATCHES OF CSV TO BE IN A SUBDIRECTORY FROM THE MAIN CSV
-        # # create new subdirectory in the raw csv folder
-        # self.create_new_dir()
-
         # split the csv files into batches of csv files
         self.split_into_batches(df)
 
@@ -49,33 +45,17 @@ class DataframePruningAndBatching():
                 df_batch = df.iloc[batch*self.entries_per_csv: (batch+1)*self.entries_per_csv]
             else:
                 df_batch = df.iloc[batch*self.entries_per_csv:]
-            df_batch.to_csv(f'{self.dest_dir}{self.lang_code}_batch_{batch+1}.csv', index=False)
+
+            #df_batch.to_csv(f'{os.path.dirname(self.source_csv_path)}/batch_{batch+1}.csv', index=False)
+            df_batch.to_csv(f'{self.dest_dir}/{os.path.basename(self.dest_dir)}_batch_{batch+1}.csv', index=False)
             print(f'Batch {batch+1}: Done')
         print('Done!')
-
-    # UNCOMMENT IF YOU WANT THE BATCHES OF CSV TO BE IN A SUBDIRECTORY FROM THE MAIN CSV
-    # # create new directory and ignore already created ones
-    # def create_new_dir(self):
-    #     try:
-    #         os.mkdir(self.dest_dir)
-    #     except OSError as error:
-    #         pass # directory already exists!
 
     def __call__(self):
         return self.remove_unwanted_row()
 
 if __name__ == '__main__':
-    # LANG_CODE = 'id'
-    # SOURCE_CSV = './sub/id/test.csv'
-    # dirname_path = os.path.dirname(SOURCE_CSV)
-    # DEST_DIR = f'{dirname_path}/csv_batch/'
-    # ENTRIES_PER_CSV = 50
 
-    # df_pruning_batching = DataframePruningAndBatching(lang_code=LANG_CODE, 
-    #                                                  source_csv_path=SOURCE_CSV, 
-    #                                                  dest_dir=DEST_DIR, 
-    #                                                  entries_per_csv=ENTRIES_PER_CSV)
-    
     # passing arguments
     args = parse_args()
   

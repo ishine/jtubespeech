@@ -7,9 +7,9 @@ SUB_SUB_DIR="id_small_demo"
 
 python3 check_subtitle_exists.py \
     --language ${LANGUAGE} \
-    --video_id_list "../${VIDEO_ID_LIST}" \
-    --main_outdir "../${MAIN_DIR}/" \
-    --sub_outdir "../${MAIN_DIR}/${LANGUAGE}/" \
-    --sub_sub_outdir "../${MAIN_DIR}/${LANGUAGE}/${SUB_SUB_DIR}/" \
-    --csv_filepath "../${MAIN_DIR}/${LANGUAGE}/${SUB_SUB_DIR}/${SUB_SUB_DIR}.csv"
+    --video_id_list "${VIDEO_ID_LIST}" \
+    --main_outdir "${MAIN_DIR}/" \
+    --sub_outdir "${MAIN_DIR}/${LANGUAGE}/" \
+    --sub_sub_outdir "${MAIN_DIR}/${LANGUAGE}/${SUB_SUB_DIR}/" \
+    --csv_filepath "${MAIN_DIR}/${LANGUAGE}/${SUB_SUB_DIR}/${SUB_SUB_DIR}.csv"
     

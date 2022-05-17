@@ -111,4 +111,4 @@ if __name__ == "__main__":
                              fn_sub=args.sublist, 
                              outdir=args.outdir)
 
-    print(f"save {args.lang.upper()} videos to {dirname}.")
+    print(f"save {args.language.upper()} videos to {dirname}.")
