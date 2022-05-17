@@ -18,22 +18,33 @@ Note that some of the codes here will require the ISO 639-1 language code of the
 ## Project Organization
 There will be some folders generated along the way as the codes are executed in this pipeline. The instructions will be shown below in the repository structure on what will be generated as the codes are being executed.   
   
-The repository structure will be as shown below:   
-TODO: UPDATE THE TREE STRUCTURE
+The repository structure will be as shown below:    
 ```
-    .
-    ├── docker-compose.yml      <--- the file used to build the docker container which will make use of the Dockerfile
-    ├── Dockerfile              <--- storing all the dependencies required to build the container, including requirements.txt, building packages from source etc.
-    ├── img                     <--- a directory of the images just for the readme
-    ├── kenlm
-    │   └── kenlm               <--- a folder with all the kenlm dependencies
-    ├── LICENSE
-    ├── README.md               
-    ├── requirements.txt        <--- all the dependencies that are required to pip install
-    └── tasks                   <--- main directory where all the execution of code takes place
-        ├── preprocessing       <--- directory to store all the code (logic), also the directory where execution of code is done locally
-        │   ├── datasets        <--- <CREATE THIS FOLDER>
-        │   │    └── <PUT YOUR DATASETS HERE>
+.
+├── batching.py
+├── check_subtitle_exists.py
+├── data_preprocessing.py
+├── download_video.py
+├── get_video_id.py
+├── docker-compose.yml
+├── Dockerfile
+├── img
+│   └── <all_the_images_for_the_readme>
+├── LICENSE
+├── README.md
+├── requirements.txt
+├── channel_id
+│   └── id
+│       ├── id_1.txt
+│       └── id_small_demo.txt
+├── scripts
+│   ├── batching.sh
+│   ├── check_subtitle_exists.sh
+│   ├── data_preprocessing.sh
+│   ├── download_video.sh
+│   └── get_video_id.sh
+├── util.py
+└── utils_jtubespeech.py
 ```
    
 ## Executing the code
