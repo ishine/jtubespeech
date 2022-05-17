@@ -2,6 +2,7 @@ import os
 import tarfile
 import sys
 import argparse
+import shutil
 from tqdm import tqdm
 from pathlib import Path
 from utils_jtubespeech import RestructureFileDirectoryJtubespeech, UtilsJtubespeech
@@ -96,6 +97,9 @@ if __name__ == '__main__':
                                               audio_format = args.audio_format)
 
     preprocess()
+
+    # delete the raw data folder after preprocessing is done
+    shutil.rmtree(args.main_data_folder)
 
     ## MAKE IT INTO A .tar.gz compressed folder
     #preprocess.make_tarfile(f'./{config["preprocessed_data_folder"]}.tar.gz', f'./{config["preprocessed_data_folder"]}')
