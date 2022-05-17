@@ -33,7 +33,7 @@ The repository structure will be as shown below:
 ├── LICENSE
 ├── README.md
 ├── requirements.txt
-├── channel_id
+├── channel_id          <--- INSERT ALL YOUR CHANNEL ID HERE
 │   └── id
 │       ├── id_1.txt
 │       └── id_small_demo.txt
