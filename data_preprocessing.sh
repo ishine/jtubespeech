@@ -7,7 +7,7 @@ MAIN_DATA_FOLDER= "${ROOT_FOLDER}/${DEST_FOLDER_NAME}" # "datasets/jtubespeech/j
 PREPROCESSED_DATA_FOLDER="datasets/jtubespeech/jtubespeech_data_small/id/annotated_data_preprocessed_wav"
 AUDIO_FORMAT="wav"
 
-python3 ../data_preprocessing.py \
+python3 data_preprocessing.py \
     --root_folder ${ROOT_FOLDER} \
     --dest_folder_name ${DEST_FOLDER_NAME} \
     --file_type_vtt ${FILE_TYPE_VTT} \

@@ -51,9 +51,9 @@ class GetVideoId:
 
         # make new directory to store the video_id
         video_id_path_split_list = self.video_id.split("/")
+        print(video_id_path_split_list)
         self.create_new_dir(f"{video_id_path_split_list[0]}/") # create the main folder
         self.create_new_dir(f"{video_id_path_split_list[0]}/{video_id_path_split_list[1]}") # create the sub folder
-
 
         # check if the video id filename exists, if it exists, throw an error to prevent corruption in appending to the text file
         assert not os.path.isfile(self.video_id), "video id filename already exists, please insert an alternative filename to avoid confusion!"

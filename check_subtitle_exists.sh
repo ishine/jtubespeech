@@ -5,7 +5,7 @@ VIDEO_ID_LIST="video_id/id/id_small_demo.txt"
 MAIN_DIR="video_id_with_sub"
 SUB_SUB_DIR="id_small_demo"
 
-python3 ../check_subtitle_exists.py \
+python3 check_subtitle_exists.py \
     --language ${LANGUAGE} \
     --video_id_list "../${VIDEO_ID_LIST}" \
     --main_outdir "../${MAIN_DIR}/" \
