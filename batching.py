@@ -18,7 +18,7 @@ def parse_args():
   
   return parser.parse_args(sys.argv[1:])
 
-class DataframePruningAndBatching():
+class DataframePruningAndBatching:
     def __init__(self, lang_code, source_csv_path, dest_dir, entries_per_csv):
         self.lang_code = lang_code
         self.source_csv_path = source_csv_path

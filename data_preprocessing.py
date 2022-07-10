@@ -42,7 +42,7 @@ class DataPreprocessingJtubespeech:
             root_preprocessed = preprocess.get_preprocessed_dirname(root)
             
             # create the preprocessed data directory
-            preprocess.create_new_dir(f'./{root_preprocessed}/')
+            preprocess.create_new_dir(f'{root_preprocessed}/')
 
             for file in files:
                 # join the root and the filepath to access the textgrid data
