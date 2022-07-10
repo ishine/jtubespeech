@@ -130,7 +130,7 @@ class UtilsJtubespeech:
         for i, j in enumerate(data_dict['start']):
 
             # declare the filename to be saved
-            filename = f'./{root_preprocessed}/{Path(file_dir).stem}-{i:04}.{self.audio_format}'
+            filename = f'{root_preprocessed}/{Path(file_dir).stem}-{i:04}.{self.audio_format}'
 
             # *1000 because it is in milliseconds and set frame rate to 16kHz (16000) as this is the sampling rate required
             newAudio_sliced = newAudio[data_dict['start'][i]*1000:data_dict['end'][i]*1000].set_frame_rate(16000)  
