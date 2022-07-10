@@ -1,6 +1,7 @@
 __pycache__/
 *.ipynb
-
+audio/*
+sub/*
 video_id/*
 video_id_with_sub/*
 video/*
