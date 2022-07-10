@@ -13,7 +13,8 @@ services:
      # - 8888:8888
     #Let code run
     volumes:
-      - ./:/jtubespeech
+      - ../:/jtubespeech
+      - /mnt/d/datasets/jtubespeech/:/jtubespeech/datasets
     ulimits:
       memlock: -1 # set upper limit for how much memory is locked for the container (-1 means lock as much as the container uses)
       stack: 67108864

@@ -51,7 +51,7 @@ class GetVideoId:
 
         # make new directory to store the video_id
         video_id_path_split_list = self.video_id.split("/")
-        print(video_id_path_split_list)
+        # print(video_id_path_split_list)
         self.create_new_dir(f"{video_id_path_split_list[0]}/") # create the main folder
         self.create_new_dir(f"{video_id_path_split_list[0]}/{video_id_path_split_list[1]}") # create the sub folder
 

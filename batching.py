@@ -25,6 +25,17 @@ class DataframePruningAndBatching:
         self.dest_dir = dest_dir
         self.entries_per_csv = entries_per_csv
 
+    def create_new_dir(self, directory: str) -> None:
+        '''
+            creates new directory and ignore already created ones
+
+            directory: the directory path that is being created
+        '''
+        try:
+            os.mkdir(directory)
+        except OSError as error:
+            pass # directory already exists!
+
     def remove_unwanted_row(self):
         # reads the csv generated from retrieve_subtitle_exists.py
         df_ = pd.read_csv(self.source_csv_path)
@@ -47,7 +58,7 @@ class DataframePruningAndBatching:
                 df_batch = df.iloc[batch*self.entries_per_csv:]
 
             #df_batch.to_csv(f'{os.path.dirname(self.source_csv_path)}/batch_{batch+1}.csv', index=False)
-            df_batch.to_csv(f'{self.dest_dir}/{os.path.basename(self.dest_dir)}_batch_{batch+1}.csv', index=False)
+            df_batch.to_csv(f'{self.dest_dir}/csv_batch/{os.path.basename(self.dest_dir)}_batch_{batch+1}.csv', index=False)
             print(f'Batch {batch+1}: Done')
         print('Done!')
 
@@ -63,5 +74,8 @@ if __name__ == '__main__':
                                               source_csv_path=args.raw_csv, 
                                               dest_dir=os.path.dirname(args.raw_csv), 
                                               entries_per_csv=args.entries)
+
+    # create a new directory to store the batches
+    df_batching.create_new_dir(f'{args.raw_csv.rsplit("/", 1)[0]}/csv_batch')
 
     df_batching()
