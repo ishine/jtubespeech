@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CHANNEL_ID_TEXT_FILEPATH="channel_id/id/id_small_demo2.txt"
-VIDEO_ID_TEXT_FILEPATH="video_id/id/id_small_demo2.txt"
+CHANNEL_ID_TEXT_FILEPATH="channel_id/id/id_1.txt"
+VIDEO_ID_TEXT_FILEPATH="video_id/id/id_2.txt"
 ID_TYPE="channel"
 
 python3 get_video_id.py \

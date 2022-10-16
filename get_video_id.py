@@ -44,7 +44,7 @@ class GetVideoId:
         except OSError as error:
             pass # directory already exists!
 
-    def get_video_id_from_channel(self) -> List[str]:
+    def get_video_id_from_channel(self) -> None:
         '''
             gets the channel id text file and returns the video id
             ---
@@ -63,9 +63,13 @@ class GetVideoId:
                 else:
                     videos = scrapetube.get_channel(channel_id=line.strip(), 
                                                     sleep=self.sleep)
-        return videos
 
-    def get_video_id_from_playlist(self) -> List[str]:
+                # get the video ids and write it into the video_id text file
+                with open(self.video_id, 'a+') as fp:
+                    for video in tqdm(videos):
+                        fp.write(f'{video["videoId"]}\n')
+
+    def get_video_id_from_playlist(self) -> None:
         '''
             gets the playlist id text file and returns the video id
             ---
@@ -83,7 +87,11 @@ class GetVideoId:
                 else:
                     videos = scrapetube.get_playlist(playlist_id=line.strip(), 
                                                      sleep=self.sleep)
-        return videos
+
+                # get the video ids and write it into the video_id text file
+                with open(self.video_id, 'a+') as fp:
+                    for video in tqdm(videos):
+                        fp.write(f'{video["videoId"]}\n')
 
     def get_video_id(self) -> None:
         '''
@@ -104,14 +112,9 @@ class GetVideoId:
 
         # get the video id list
         if self.id_type == 'channel':
-            videos = self.get_video_id_from_channel()
+            self.get_video_id_from_channel()
         elif self.id_type == 'playlist':
-            videos = self.get_video_id_from_playlist()
-
-        # then, get the video ids and write it into the video_id text file
-        with open(self.video_id, 'a+') as fp:
-            for video in tqdm(videos):
-                fp.write(f'{video["videoId"]}\n')
+            self.get_video_id_from_playlist()
 
     def __call__(self):
         return self.get_video_id()
