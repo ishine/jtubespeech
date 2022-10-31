@@ -16,6 +16,7 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--language",           type=str, help="the targeted language code (ISO 639-1) (eg. ja, en, ...)")
+    parser.add_argument("--language2",          type=str, default=None, help="second lanugage for translation - the targeted language code (ISO 639-1) (eg. ja, en, ...)")
     parser.add_argument("--video_id_list",      type=str, help="filename of video ID list")
     parser.add_argument("--main_outdir",        type=str, default="video_id_with_sub", help="main output directory")
     parser.add_argument("--sub_outdir",         type=str, help="sub output directory")
@@ -35,7 +36,7 @@ def create_new_dir(directory: str) -> None:
     except OSError as error:
         pass # directory already exists!
 
-def retrieve_subtitle_exists(lang, fn_videoid, main_outdir, sub_outdir, sub_sub_outdir, csv_filepath, wait_sec=0.2, fn_checkpoint=None):
+def retrieve_subtitle_exists(lang, fn_videoid, main_outdir, sub_outdir, sub_sub_outdir, csv_filepath, lang2="", wait_sec=0.2, fn_checkpoint=None):
 
     # create new directory and the subsequent sub directories to store the final csv file
     create_new_dir(main_outdir)
@@ -71,11 +72,20 @@ def retrieve_subtitle_exists(lang, fn_videoid, main_outdir, sub_outdir, sub_sub_
         #   subtitle_exists = subtitle_exists.append( \
         #     {"videoid": videoid, "auto": lang in auto_lang, "sub": lang in manu_lang},
         #     ignore_index=True)
-            subtitle_exists = pd.concat([subtitle_exists, pd.DataFrame.from_records(
-                [{"videoid": videoid, "auto": lang in auto_lang, "sub": lang in manu_lang}])])
+
+            # if the second language is not stated
+            if not lang2:
+                subtitle_exists = pd.concat([subtitle_exists, pd.DataFrame.from_records(
+                    [{"videoid": videoid, "auto": lang in auto_lang, "sub": lang in manu_lang}])])
+            # if second language is stated - translation tasks
+            else:
+                subtitle_exists = pd.concat([subtitle_exists, pd.DataFrame.from_records(
+                    [{"videoid": videoid, "auto": lang in auto_lang, "sub": lang in manu_lang, "auto2": lang2 in auto_lang, "sub2": lang2 in manu_lang}])])
             n_video += 1
+            
         except:
-            pass
+            print('error')
+            continue
 
         # write current result
         if n_video % 100 == 0:
@@ -94,6 +104,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     filename = retrieve_subtitle_exists(lang=args.language, 
+                                        lang2=args.language2,
                                         fn_videoid=args.video_id_list,
                                         main_outdir=args.main_outdir, 
                                         sub_outdir=args.sub_outdir, 

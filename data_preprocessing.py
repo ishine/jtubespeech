@@ -52,7 +52,7 @@ class DataPreprocessingJtubespeech:
                 if file.endswith('.vtt'):
                     data_dict = preprocess.get_vtt_values(file_access)
                     preprocess.write_to_txt_file(f'{root_preprocessed}/{Path(file_access).stem}.trans.txt', data_dict)
-                    
+                
                 elif file.endswith('.wav'):
                     # get the vtt filename and extension (because same filename for .wav and .vtt)
                     file_access_vtt = file_access.split('.')

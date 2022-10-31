@@ -95,6 +95,7 @@ class UtilsJtubespeech:
         filename = Path(file_dir).stem
         # replace the .trans with '' in the text file
         filename = filename.replace('.trans', '')
+        filename = filename.replace("_sub", '')
 
         with open(file_dir, 'w+') as f:
             for i,j in enumerate(data_dict['annotation']):
@@ -103,10 +104,10 @@ class UtilsJtubespeech:
 
                 # text preprocessing using regex
                 #preprocessed_text = re.sub('[^a-zA-Z0-9$%.\' ]', '', preprocessed_text)
-                preprocessed_text = re.sub('[^a-zA-Z0-9$%.\' ]|(?!\d)\.(?!\d)', '', preprocessed_text)
+                preprocessed_text = re.sub('[^a-zA-Z0-9$%.\' ]|(?!\d)\.(?!\d)', ' ', preprocessed_text)
+                preprocessed_text = preprocessed_text.replace('  ', ' ')
 
-
-                f.write(f'{filename}-{i:04} {preprocessed_text}\n')
+                f.write(f'{filename}-{i:05} {preprocessed_text}\n')
 
     # define the preprocessed data path so that the preprocessed data can be saved in another directory later
     def get_preprocessed_dirname(self, root):
@@ -130,7 +131,7 @@ class UtilsJtubespeech:
         for i, j in enumerate(data_dict['start']):
 
             # declare the filename to be saved
-            filename = f'{root_preprocessed}/{Path(file_dir).stem}-{i:04}.{self.audio_format}'
+            filename = f'{root_preprocessed}/{Path(file_dir).stem}-{i:05}.{self.audio_format}'
 
             # *1000 because it is in milliseconds and set frame rate to 16kHz (16000) as this is the sampling rate required
             newAudio_sliced = newAudio[data_dict['start'][i]*1000:data_dict['end'][i]*1000].set_frame_rate(16000)  
