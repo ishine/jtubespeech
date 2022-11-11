@@ -3,7 +3,7 @@
 
 LANGUAGE="ms"
 LANGUAGE2="en"
-BATCH_CSV_FILE="video_id_with_sub/ms/ms_1/csv_batch/ms_1_batch_8.csv"
+BATCH_CSV_FILE="video_id_with_sub/ms/ms_2/csv_batch/ms_2_batch_14.csv"
 OUTPUT_DIR="video"
 
 python3 download_video.py \

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CHANNEL_ID_TEXT_FILEPATH="playlist_id/ms/ms_1.txt"
-VIDEO_ID_TEXT_FILEPATH="video_id/ms/ms_1.txt"
+CHANNEL_ID_TEXT_FILEPATH="playlist_id/ms/ms_2.txt"
+VIDEO_ID_TEXT_FILEPATH="video_id/ms/ms_2.txt"
 ID_TYPE="playlist"
 SLEEP=2
 
