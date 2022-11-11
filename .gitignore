@@ -10,5 +10,4 @@ unused_scripts/*
 
 *.flac
 *.wav
-*.txt
 !requirements.txt
