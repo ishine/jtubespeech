@@ -1,10 +1,10 @@
 #!/bin/bash
 # if no language 2 can just remove the language2 flag
 LANGUAGE="ms"
-LANGUAGE2="en"
-VIDEO_ID_LIST="video_id/ms/ms_2.txt"
+# LANGUAGE2="en"
+VIDEO_ID_LIST="video_id/ms/ms_3.txt"
 MAIN_DIR="video_id_with_sub"
-SUB_SUB_DIR="ms_2"
+SUB_SUB_DIR="ms_3"
 
 python3 check_subtitle_exists.py \
     --language ${LANGUAGE} \
