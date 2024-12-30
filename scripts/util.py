@@ -1,5 +1,4 @@
 import re
-from datetime import datetime as dt
 from pathlib import Path
 import subprocess
 
@@ -23,8 +22,12 @@ def make_basename(videoid: str) -> str:
   return str(Path(videoid[:2]) / videoid)
 
 
-def count_total_second(t: dt) -> float:
-  return t.hour * 3600 + t.minute * 60 + t.second * 1 + t.microsecond * 1e-6
+def count_total_second(ts: str) -> float:
+  ss = ts.split(".")
+  s1 = ss[0].split(":")
+  t = int(s1[0]) * 3600 + int(s1[1]) * 60 + int(s1[2])
+  t = t + float(ss[1]) / 1000
+  return t
 
 
 def obtain_channelid(videoid: str) -> str:
@@ -35,7 +38,9 @@ def obtain_channelid(videoid: str) -> str:
   subprocess.run(f"wget {url} -O {fn_html}", shell=True)
 
   # obtain ID
-  html = "".join(open(fn_html, "r").readlines())
+  with open(fn_html, "r") as f:
+    lines = f.readlines()
+  html = "".join(lines)
   try:
     # only Japanese
     channelid = re.findall(r"canonicalBaseUrl\":\"/channel/([\w\_\-]+?)\"\}\},\"subscriberCountText\":\{\"accessibility\":\{\"accessibilityData\":\{\"label\":\"チャンネル登録者数", html)[0]
@@ -51,8 +56,8 @@ def vtt2txt(vtt: list) -> list:
   for v in vtt:
     m = re.match(r'(\d+\:\d+\:\d+\.\d+) --> (\d+\:\d+\:\d+\.\d+)', v.strip("\n"))
     if m is not None:
-      st = count_total_second(dt.strptime(m.groups()[0], "%H:%M:%S.%f"))
-      et = count_total_second(dt.strptime(m.groups()[1], "%H:%M:%S.%f"))
+      st = count_total_second(m.groups()[0])
+      et = count_total_second(m.groups()[1])
       txt.append([st, et, ""])
       is_started = True   
     elif is_started:
@@ -84,8 +89,8 @@ def autovtt2txt(vtt: list) -> list:
     if m is None:
       continue
 
-    st = count_total_second(dt.strptime(m.groups()[0], "%H:%M:%S.%f"))
-    et = count_total_second(dt.strptime(m.groups()[1], "%H:%M:%S.%f"))
+    st = count_total_second(m.groups()[0])
+    et = count_total_second(m.groups()[1])
 
     text_line = ""
     for line in [vtt[idx+1], vtt[idx+2]]:
@@ -112,18 +117,17 @@ def autovtt2txt(vtt: list) -> list:
   return txt_refined
 
 def get_subtitle_language(response_youtube):
-  lang_code = ["aa","ab","ace","ady","af","ak","als","alt","am","an","ang","ar","arc","ary","arz","as","ast","atj","av","avk","awa","ay","az","azb","ba","ban","bar","bat-smg","bcl","be","be-tarask","bg","bh","bi","bjn","bm","bn","bo","bpy","br","bs","bug","bxr","ca","cbk-zam","cdo","ce","ceb","ch","cho","chr","chy","ckb","co","cr","crh","cs","csb","cu","cv","cy","da","de","din","diq","dsb","dty","dv","dz","ee","el","eml","en","eo","es","et","eu","ext","fa","ff","fi","fiu-vro","fj","fo","fr","frp","frr","fur","fy","ga","gag","gan","gcr","gd","gl","glk","gn","gom","gor","got","gu","gv","ha","hak","haw","he","hi","hif","ho","hr","hsb","ht","hu","hy","hyw","hz","ia","id","ie","ig","ii","ik","ilo","inh","io","is","it","iu","ja","jam","jbo","jv","ka","kaa","kab","kbd","kbp","kg","ki","kj","kk","kl","km","kn","ko","koi","kr","krc","ks","ksh","ku","kv","kw","ky","la","lad","lb","lbe","lez","lfn","lg","li","lij","lld","lmo","ln","lo","lrc","lt","ltg","lv","mad","mai","map-bms","mdf","mg","mh","mhr","mi","min","mk","ml","mn","mni","mnw","mr","mrj","ms","mt","mus","mwl","my","myv","mzn","na","nah","nap","nds","nds-nl","ne","new","ng","nia","nl","nn","no","nov","nqo","nrm","nso","nv","ny","oc","olo","om","or","os","pa","pag","pam","pap","pcd","pdc","pfl","pi","pih","pl","pms","pnb","pnt","ps","pt","qu","rm","rmy","rn","ro","roa-rup","roa-tara","ru","rue","rw","sa","sah","sat","sc","scn","sco","sd","se","sg","sh","shn","si","simple","sk","skr","sl","sm","smn","sn","so","sq","sr","srn","ss","st","stq","su","sv","sw","szl","szy","ta","tay","tcy","te","tet","tg","th","ti","tk","tl","tn","to","tpi","tr","trv","ts","tt","tum","tw","ty","tyv","udm","ug","uk","ur","uz","ve","vec","vep","vi","vls","vo","wa","war","wo","wuu","xal","xh","xmf","yi","yo","za","zea","zh","zh-classical","zh-min-nan",
-  "zh-yue","zu"]
+  lang_code = ["aa","ab","ace","ady","af","ak","als","alt","am","an","ang","ar","arc","ary","arz","as","ast","atj","av","avk","awa","ay","az","azb","ba","ban","bar","bat-smg","bcl","be","be-tarask","bg","bh","bi","bjn","bm","bn","bo","bpy","br","bs","bug","bxr","ca","cbk-zam","cdo","ce","ceb","ch","cho","chr","chy","ckb","co","cr","crh","cs","csb","cu","cv","cy","da","de","din","diq","dsb","dty","dv","dz","ee","el","eml","en","eo","es","et","eu","ext","fa","ff","fi","fiu-vro","fj","fo","fr","frp","frr","fur","fy","ga","gag","gan","gcr","gd","gl","glk","gn","gom","gor","got","gu","gv","ha","hak","haw","he","hi","hif","ho","hr","hsb","ht","hu","hy","hyw","hz","ia","id","ie","ig","ii","ik","ilo","inh","io","is","it","iu","ja","jam","jbo","jv","ka","kaa","kab","kbd","kbp","kg","ki","kj","kk","kl","km","kn","ko","koi","kr","krc","ks","ksh","ku","kv","kw","ky","la","lad","lb","lbe","lez","lfn","lg","li","lij","lld","lmo","ln","lo","lrc","lt","ltg","lv","mad","mai","map-bms","mdf","mg","mh","mhr","mi","min","mk","ml","mn","mni","mnw","mr","mrj","ms","mt","mus","mwl","my","myv","mzn","na","nah","nap","nds","nds-nl","ne","new","ng","nia","nl","nn","no","nov","nqo","nrm","nso","nv","ny","oc","olo","om","or","os","pa","pag","pam","pap","pcd","pdc","pfl","pi","pih","pl","pms","pnb","pnt","ps","pt","qu","rm","rmy","rn","ro","roa-rup","roa-tara","ru","rue","rw","sa","sah","sat","sc","scn","sco","sd","se","sg","sh","shn","si","simple","sk","skr","sl","sm","smn","sn","so","sq","sr","srn","ss","st","stq","su","sv","sw","szl","szy","ta","tay","tcy","te","tet","tg","th","ti","tk","tl","tn","to","tpi","tr","trv","ts","tt","tum","tw","ty","tyv","udm","ug","uk","ur","uz","ve","vec","vep","vi","vls","vo","wa","war","wo","wuu","xal","xh","xmf","yi","yo","za","zea","zh","zu"]
 
   sub_type = None
   subtitle = {"auto": [], "sub": []}
   for r in response_youtube.split("\n"):
-    if r.startswith("Available automatic captions for"):
+    if r.startswith("[info] Available automatic captions for"):
       sub_type = "auto"
-    elif r.startswith("Available subtitles for"):
+    elif r.startswith("[info] Available subtitles for"):
       sub_type = "sub"
     elif sub_type is not None:
-      lang = r.split(" ")[0].lower()
+      lang = r.split(" ")[0].split('-')[0].lower()
       if lang in lang_code:
         subtitle[sub_type].append(lang)
 

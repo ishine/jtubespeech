@@ -21,10 +21,19 @@ def parse_args():
 
 def obtain_video_id(lang, fn_word, outdir="videoid", wait_sec=0.2):
   fn_videoid = Path(outdir) / lang / f"{Path(fn_word).stem}.txt"
-  fn_videoid.parent.mkdir(parents=True, exist_ok=True)
 
-  with open(fn_videoid, "w") as f:
-    for word in tqdm(list(open(fn_word, "r").readlines())):
+  if Path.exists(fn_videoid):
+    with open(fn_videoid, "r") as f:
+      vids = set([line.strip() for line in f.readlines()])
+  else:
+    vids = set()
+    fn_videoid.parent.mkdir(parents=True, exist_ok=True)
+    fn_videoid.touch()
+
+  with open(fn_videoid, "a") as f:
+    with open(fn_word, "r") as f1:
+      lines = f1.readlines()
+    for word in tqdm(list(lines)):
       try:
         # download search results
         url = make_query_url(word)
@@ -33,10 +42,18 @@ def obtain_video_id(lang, fn_word, outdir="videoid", wait_sec=0.2):
         # find video IDs
         videoids_found = [x.split(":")[1].strip("\"").strip(" ") for x in re.findall(r"\"videoId\":\"[\w\_\-]+?\"", str(html))]
         videoids_found = list(set(videoids_found))
-
+        for v in videoids_found:
+          v = v.strip()
+          if v in vids:
+            continue
+          vids.add(v)
+          f.write(v + "\n")
+          f.flush()
+        '''
         # write
         f.writelines([v + "\n" for v in videoids_found])
         f.flush()
+        '''
       except:
         print(f"No video found for {word}.")
 

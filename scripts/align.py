@@ -1,507 +1,462 @@
 #!/usr/bin/env python3
 
-# Copyright 2021, Ludwig Kürzinger, Takaaki Saeki
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
-"""Perform CTC Re-Segmentation on japanese dataset.
-Either start this program as a script or from the interactive python REPL.
-
-# Recommended model:
-# Japanese Transformer Model by Shinji (note: this model has FRAMES_PER_INDEX=768 )
-asr_model_name = "Shinji Watanabe/laborotv_asr_train_asr_conformer2_latest33_raw_char_sp_valid.acc.ave"
-d = ModelDownloader()
-model = d.download_and_unpack(asr_model_name)
-# Start the program, e.g.:
-align(wavdir=dir_wav, txtdir=dir_txt, output=output, ngpu=ngpu, longest_audio_segments=longest_audio_segments, **model)
-"""
-
 import argparse
-import logging
-import sys
 import time
-from typing import Union
 import torch
 import numpy as np
-
-from typeguard import check_argument_types
-
-from espnet.utils.cli_utils import get_commandline_args
-from espnet2.utils import config_argparse
-from espnet2.utils.types import str_or_none
-
-from pathlib import Path
-import soundfile
-from espnet_model_zoo.downloader import ModelDownloader
-from espnet2.bin.asr_align import CTCSegmentation
-from torch.multiprocessing import Process, Queue
-from espnet2.utils.types import str2bool
-
-# Language specific imports - japanese
-from num2words import num2words
+import shutil
 import re
+import regex
 
-try:
-    import neologdn
+import tempfile
+import subprocess
+import soundfile
+import ctc_segmentation
+import pykakasi
+from pathlib import Path
+from transformers import AutoProcessor, Wav2Vec2ForCTC, Wav2Vec2Processor, Wav2Vec2CTCTokenizer
+from tts_norm.normalizer import Normalizer
+from torch.multiprocessing import Process, Queue
 
-    NEOLOGDN_AVAILABLE = True
-except:
-    print("ERROR: neologdn is not available!")
-    NEOLOGDN_AVAILABLE = False
-try:
-    import romkan
-
-    ROMKAN_AVAILABLE = True
-except:
-    print("ERROR: romkan is not available!")
-    ROMKAN_AVAILABLE = False
-
-# NUMBER_OF_PROCESSES determines how many CTC segmentation workers
-# are started. Set this higher or lower, depending how fast your
-# network can do the inference and how much RAM you have
-NUMBER_OF_PROCESSES = 4
+normalizer_map = {}
+#ffmpegExe = "/usr/local/ffmpeg/bin/ffmpeg"
+#ffprobeExe = "/usr/local/ffmpeg/bin/ffprobe"
+ffmpegExe = "/usr/bin/ffmpeg"
+ffprobeExe = "/usr/bin/ffprobe"
 
 
-def text_processing(utt_txt):
-    """Normalize text.
-    Use for Japanese text.
-    Args:
-        utt_txt: String of Japanese text.
-    Returns:
-        utt_txt: Normalized
-    """
-    # convert UTF-16 latin chars to ASCII
-    if NEOLOGDN_AVAILABLE:
-        utt_txt = neologdn.normalize(utt_txt)
-    # Romanji to Hiragana
-    if ROMKAN_AVAILABLE:
-        utt_txt = romkan.to_hiragana(utt_txt)
-    # replace some special characters
-    utt_txt = utt_txt.replace('"', "").replace(",", "")
-    # replace all the numbers
-    numbers = re.findall(r"\d+\.?\d*", utt_txt)
-    transcribed_numbers = [num2words(item, lang="ja") for item in numbers]
-    for nr in range(len(numbers)):
-        old_nr = numbers[nr]
-        new_nr = transcribed_numbers[nr]
-        utt_txt = utt_txt.replace(old_nr, new_nr, 1)
-    return utt_txt
+def is_chinese(content):
+    mobj1 = re.search('[\u4E00-\u9FA5]+', content)
+    mobj2 = re.fullmatch('[\u4E00-\u9FA5a-zA-Z\s,.?!]+', content)
+    return mobj1 is not None and mobj2 is not None
 
+def is_japanese(content):
+    mobj = re.fullmatch('[\u3040-\u309F\u30A0-\u30FF\s,.?!]+', content)
+    return mobj is not None
 
-def get_partitions(
-    t: int = 100000,
-    max_len_s: float = 1280.0,
-    fs: int = 16000,
-    samples_to_frames_ratio=512,
-    overlap: int = 0,
-):
-    """Obtain partitions
+def is_korean(content):
+    mobj = re.fullmatch('[\uAC00-\uD7A3\s,.?!]+', content)
+    return mobj is not None
 
-    Note that this is implemented for frontends that discard trailing data.
+def is_english(content):
+    mobj = re.fullmatch('[a-zA-Z0-9\-_\'\s,.?!]+', content)
+    return mobj is not None
 
-    Note that the partitioning strongly depends on your architecture.
-
-    A note on audio indices:
-        Based on the ratio of audio sample points to lpz indices (here called
-        frame), the start index of block N is:
-        0 + N * samples_to_frames_ratio
-        Due to the discarded trailing data, the end is then in the range of:
-        [N * samples_to_frames_ratio - 1 .. (1+N) * samples_to_frames_ratio] ???
-    """
-    # max length should be ~ cut length + 25%
-    cut_time_s = max_len_s / 1.25
-    max_length = int(max_len_s * fs)
-    cut_length = int(cut_time_s * fs)
-    # make sure its a multiple of frame size
-    max_length -= max_length % samples_to_frames_ratio
-    cut_length -= cut_length % samples_to_frames_ratio
-    overlap = int(max(0, overlap))
-    if (max_length - cut_length) <= samples_to_frames_ratio * (2 + overlap):
-        raise ValueError(
-            f"Pick a larger time value for partitions. "
-            f"time value: {max_len_s}, "
-            f"overlap: {overlap}, "
-            f"ratio: {samples_to_frames_ratio}."
-        )
-    partitions = []
-    duplicate_frames = []
-    cumulative_lpz_length = 0
-    cut_length_lpz_frames = int(cut_length // samples_to_frames_ratio)
-    partition_start = 0
-    while t > max_length:
-        start = int(max(0, partition_start - samples_to_frames_ratio * overlap))
-        end = int(
-            partition_start + cut_length + samples_to_frames_ratio * (1 + overlap) - 1
-        )
-        partitions += [(start, end)]
-        # overlap - duplicate frames shall be deleted.
-        cumulative_lpz_length += cut_length_lpz_frames
-        for i in range(overlap):
-            duplicate_frames += [
-                cumulative_lpz_length - i,
-                cumulative_lpz_length + (1 + i),
-            ]
-        # next partition
-        t -= cut_length
-        partition_start += cut_length
+def text_processing(utt_txt, _lang):
+    if _lang in normalizer_map:
+        normalizer = normalizer_map[_lang]
     else:
-        start = int(max(0, partition_start - samples_to_frames_ratio * overlap))
-        partitions += [(start, None)]
-    partition_dict = {
-        "partitions": partitions,
-        "overlap": overlap,
-        "delete_overlap_list": duplicate_frames,
-        "samples_to_frames_ratio": samples_to_frames_ratio,
-        "max_length": max_length,
-        "cut_length": cut_length,
-        "cut_time_s": cut_time_s,
-    }
-    return partition_dict
+        normalizer = Normalizer(_lang)
+        normalizer_map[_lang] = normalizer
+    txt, unnormalize, _ = normalizer.normalize(utt_txt)
+    return txt, unnormalize
 
-
-def align_worker(in_queue, out_queue, num=0):
-    print(f"align_worker {num} started")
-    for task in iter(in_queue.get, "STOP"):
-        try:
-            result = CTCSegmentation.get_segments(task)
-            task.set(**result)
-            segments_str = str(task)
-            out_queue.put(segments_str)
-            # calculate average score
-            scores = [boundary[2] for boundary in task.segments]
-            avg = sum(scores) / len(scores)
-            logging.info(f"Aligned {task.name} with avg score {avg:3.4f}")
-        except (AssertionError, IndexError) as e:
-            # AssertionError: Audio is shorter than ground truth
-            # IndexError: backtracking not successful (e.g. audio-text mismatch)
-            logging.error(
-                f"Failed to align {task.utt_ids[0]} in {task.name} because of: {e}"
-            )
-        del task
-    print(f"align_worker {num} stopped")
-
-
-def listen_worker(in_queue, segments="./segments.txt"):
-    print("listen_worker started.")
-    with open(segments, "w") as f:
-        for item in iter(in_queue.get, "STOP"):
-            if segments is None:
-                print(item)
-            else:
-                f.write(item)
-                f.flush()
-    print("listen_worker ended.")
-
-
-def find_files(wavdir, txtdir):
-    """Search for files in given directories."""
+def find_files(flacdir, txtdir):
     files_dict = {}
-    dir_txt_list = list(txtdir.glob("**/*.txt"))
-    for wav in wavdir.glob("**/*.wav"):
-        stem = wav.stem
-        txt = None
-        for item in dir_txt_list:
-            if item.stem == stem:
-                if txt is not None:
-                    raise ValueError(f"Duplicate found: {stem}")
-                txt = item
-        if txt is None:
-            logging.error(f"No text found for {stem}.wav")
-        else:
-            files_dict[stem] = (wav, txt)
+    txt_dict = {}
+    for item in txtdir.glob("**/*.txt"):
+        txt_dict[item.stem] = item
+    for flac in flacdir.glob("**/*.flac"):
+        if flac.stem.endswith('_16k'):
+            continue
+        files_dict[flac.stem] = (flac, txt_dict[flac.stem])
     return files_dict
 
+def format_times(ts):
+    ts = ts / 1000
+    s = ts % 60
+    ts = ts / 60
+    m = ts % 60
+    ts = ts / 60
+    h = ts
+
+    return "%d:%02d:%02d" % (h, m, s)
+
+def listen_worker(in_queue, segment_file, flac_out):
+    print("listen_worker started.")
+
+    for flac, subs in iter(in_queue.get, "STOP"):
+        print('listen_worker', segment_file, flac_out, flac, len(subs))
+        for sub in subs:
+            rec_id = sub[0]
+            opath = flac_out / rec_id[0:2] / (rec_id + '.flac')
+            if not opath.parent.exists():
+                opath.parent.mkdir()
+            cut_cmd = f'{ffmpegExe} -ss {sub[1]} -to {sub[2]} -i "{flac}" -y "{opath}"'
+            subprocess.run(cut_cmd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,shell=True)
+
+        with open(segment_file,'a',encoding='utf-8') as f:
+            for sub in subs:
+                rec_id = sub[0]
+                opath = flac_out / rec_id[0:2] / (rec_id + '.flac')
+                line = f'{opath}\t{sub[3]}\t{sub[4]}\t0\n'
+                f.write(line)
+                f.flush()
+
+    print("listen_worker ended.")
+
+def align_worker(in_queue, out_queue, lang, seg_list, num=0):
+    print(f"align_worker {num} started")
+    global skip_duration
+    batch_size = 1
+    device = torch.device(f"cuda:{num}" if torch.cuda.is_available() else "cpu")
+    print(device)
+    print('loading ...')
+    if lang == 'zh':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-large-xlsr-53-chinese-zh-cn-gpt"
+    elif lang == 'en':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-xls-r-1b-english"
+    elif lang == 'ja':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-xls-r-300m-japanese"
+    elif lang == 'ko':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-large-mms-1b-korean-colab_v0"
+    elif lang == 'vi':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-large-xlsr-53-vietnamese"
+    elif lang == 'th':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-xls-r-300m-th-cv11_0"
+    elif lang == 'ru':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-xlsr-1b-ru"
+    elif lang == 'es':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-xls-r-300m-es"
+    elif lang == 'fr':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-large-xlsr-french"
+    elif lang == 'de':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-large-xls-r-300m-de-with-lm"
+    elif lang == 'pt':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-xls-r-pt-cv7-from-bp400h"
+    elif lang == 'ar':
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-large-xls-r-300m-ar"
+    else:
+        model_name = "/usr/local/data/wav2vec2/wav2vec2-xls-r-1b-english"
+
+    processor = Wav2Vec2Processor.from_pretrained(model_name)
+    tokenizer = Wav2Vec2CTCTokenizer.from_pretrained(model_name)
+    model = Wav2Vec2ForCTC.from_pretrained(model_name).to(device)
+    vocab = tokenizer.get_vocab()
+    inv_vocab = {v:k for k,v in vocab.items()}
+    if "<unk>" in vocab:
+        unk_id = vocab["<unk>"]
+    elif "<UNK>" in vocab:
+        unk_id = vocab["<UNK>"]
+    elif "[unk]" in vocab:
+        unk_id = vocab["[unk]"]
+    elif "[UNK]" in vocab:
+        unk_id = vocab["[UNK]"]
+    print('load done')
+    for flac, txt in iter(in_queue.get, "STOP"):
+        stem = flac.stem
+        with open(txt) as f:
+            lines = f.readlines()
+        utterance_list = []
+        for line in lines:
+            utterance_list.append(line.strip())
+        overlap_keys = set()
+        for i1, utt1 in enumerate(utterance_list):
+            utt_start1, utt_end1, _ = utt1.split("\t", 2)
+            key = f'{utt_start1}_{utt_end1}'
+            utt_start1 = float(utt_start1)
+            utt_end1 = float(utt_end1)
+            for i2, utt2 in enumerate(utterance_list):
+                if i1 == i2:
+                    continue
+                utt_start2, utt_end2, _ = utt2.split("\t", 2)
+                utt_start2 = float(utt_start2)
+                utt_end2 = float(utt_end2)
+                if max(utt_start1, utt_start2) < min(utt_end1, utt_end2):
+                    skip_duration += utt_end1 - utt_start1
+                    overlap_keys.add(key)
+                    break
+        print(f"{stem}, skip {skip_duration}s, {len(overlap_keys)} records.")
+        unm_transcripts = []
+        transcripts = []
+        cleaned_texts = []
+        timestamps = []
+        rec_ids = []
+        kks = pykakasi.kakasi()
+        for i, utt in enumerate(utterance_list):
+            rec_id = f"{stem}_{i:04}"
+            if rec_id in seg_list:
+                continue
+            utt_start, utt_end, utt_txt = utt.split("\t", 2)
+            key = f'{utt_start}_{utt_end}'
+            if float(utt_end) <= float(utt_start) or key in overlap_keys:
+                continue
+            # text processing
+            utt_txt = utt_txt.replace('"', "")
+            utt_txt = pattern_space.sub(" ", utt_txt)
+            cleaned, unnormalize = text_processing(utt_txt, lang)
+            if unnormalize:
+                skip_duration += float(utt_end) - float(utt_start)
+                print(f"{stem}, skip {skip_duration}s, unnormalize {utt_txt} {cleaned}.")
+                continue
+            if lang == 'zh' and not is_chinese(cleaned):
+                skip_duration += float(utt_end) - float(utt_start)
+                print(f"{stem}, skip {skip_duration}s, illegal character {utt_txt} {cleaned}.")
+                continue
+            if lang == 'ja' and not (is_japanese(cleaned) or is_chinese(cleaned)):
+                skip_duration += float(utt_end) - float(utt_start)
+                print(f"{stem}, skip {skip_duration}s, illegal character {utt_txt} {cleaned}.")
+                continue
+            if lang == 'ko' and not is_korean(cleaned):
+                skip_duration += float(utt_end) - float(utt_start)
+                print(f"{stem}, skip {skip_duration}s, illegal character {utt_txt} {cleaned}.")
+                continue
+            if lang == 'en' and not is_english(cleaned):
+                skip_duration += float(utt_end) - float(utt_start)
+                print(f"{stem}, skip {skip_duration}s, illegal character {utt_txt} {cleaned}.")
+                continue
+            if lang == 'ja':
+                result = kks.convert(cleaned)
+                if result is not None and len(result) >0:
+                    spell = ''
+                    sep = ''
+                    for item in result:
+                        hira = item['hira']
+                        #hira = item['kana']
+                        spell += sep + hira
+                        sep  = ' '
+                else:
+                    spell = text
+                transcripts.append(spell)
+            else:
+                transcripts.append(cleaned)
+            cleaned_texts.append(cleaned)
+            unm_transcripts.append(utt_txt)
+            rec_ids.append(rec_id)
+            timestamps.append((float(utt_start), float(utt_end)))
+
+        if len(timestamps) == 0:
+            continue
+        flac16k = flac.parent / (flac.stem+'_16k.flac')
+        if not flac16k.exists():
+            with tempfile.TemporaryDirectory() as temp_dir_path:
+                temp_path = Path(temp_dir_path) / flac16k.name
+                cmd = f'{ffmpegExe} -i "{flac}" -vn -ar 16000 -ac 1 -sample_fmt s16 -y "{temp_path}"'
+                subprocess.run(cmd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL, shell=True)
+                shutil.move(temp_path, flac16k)
+        audio, sample_rate = soundfile.read(flac16k)
+
+        # Run prediction, get logits and probabilities
+        start = end = 0
+        total = 0
+        accuracy = 0
+        subs = []
+        offset_second = 0.1
+        while True:
+            try:
+                start_time = timestamps[start][0]
+                end_time = timestamps[start][0]
+                end = start
+                while end < len(timestamps):
+                    end = end + 1
+                    end_time = timestamps[end-1][0]
+                    if end_time - start_time > batch_size*60:
+                        break
+                if start > 0:
+                    if end_time - timestamps[start-1][0] <= (batch_size+1)*60:
+                        offset = 1
+                        start -= offset
+                        start_time = timestamps[start][0]
+                    else:
+                        offset = 0
+                else:
+                    offset = 0
+                if end_time - start_time > (batch_size+1)*60:
+                    if end-1 > start:
+                        end -= 1
+                        end_time = timestamps[end-1][0]
+                    else:
+                        if start >= len(timestamps)-1:
+                            #忽略并中止
+                            print('-'*10, 'ignore and stop')
+                            break
+                        #忽略本条字幕
+                        print('='*10, 'ignore', start, end, transcripts[start:end], end_time - start_time)
+                        start = end
+                        continue
+
+                timestamp_slice = timestamps[start:end]
+                transcripts_slice = transcripts[start:end]
+                cleaned_texts_slice = cleaned_texts[start:end]
+                unm_transcripts_slice = unm_transcripts[start:end]
+                rec_ids_slice = rec_ids[start:end]
+                start_time -= offset_second
+                end_time += offset_second
+                #print(start, end, end_time - start_time)
+                start_idx = int(start_time * sample_rate)
+                end_idx = int(end_time * sample_rate)
+                if start_idx < 0:
+                    start_idx = 0
+                    start_time = 0
+                if end_idx > len(audio):
+                    end_idx = len(audio)
+                audio_slice = audio[start_idx:end_idx]
+                inputs = processor(audio_slice, sampling_rate=sample_rate, return_tensors="pt", padding="longest")
+                inputs = {k: v.to(device) for k, v in inputs.items()}
+                with torch.no_grad():
+                    #logits = model(inputs['input_values'].to(device)).logits.cpu()[0]
+                    logits = model(**inputs).logits.cpu()[0]
+                    probs = torch.nn.functional.softmax(logits,dim=-1)
+
+                # Tokenize transcripts
+                tokens = []
+                texts = []
+                indexes = []
+                for i, transcript in enumerate(transcripts_slice):
+                    assert len(transcript) > 0
+                    tok_ids = tokenizer(transcript.replace("\n"," ").lower())['input_ids']
+                    tok_ids = np.array(tok_ids,dtype=np.int64)
+                    know_ids = tok_ids[tok_ids != unk_id]
+                    if len(know_ids) != 0:
+                        tokens.append(know_ids)
+                        texts.append(transcript)
+                        indexes.append(i)
+
+                # Align
+                char_list = [inv_vocab[i] for i in range(len(inv_vocab))]
+                config = ctc_segmentation.CtcSegmentationParameters(char_list=char_list)
+                config.index_duration = audio_slice.shape[0] / probs.size()[0] / sample_rate
+
+                ground_truth_mat, utt_begin_indices = ctc_segmentation.prepare_token_list(config, tokens)
+                timings, char_probs, state_list = ctc_segmentation.ctc_segmentation(config, probs.numpy(), ground_truth_mat)
+                #print(len(tokens), len(texts), len(ground_truth_mat), len(utt_begin_indices), utt_begin_indices, len(timings))
+                segments = ctc_segmentation.determine_utterance_segments(config, utt_begin_indices, char_probs, timings, texts)
+                for i, t, p in zip(indexes, texts, segments):
+                    if i < offset:
+                        continue
+                    utt_start, utt_end = timestamp_slice[i]
+                    stime = p[0] + start_time
+                    etime = p[1] + start_time
+                    if p[2] > 1.5:
+                        total += 1
+                        skip_duration += utt_end - utt_start
+                        print("low score", f'{stem}, skip {skip_duration}s', {"start": stime, "end": etime, "conf": p[2], "text": t})
+                        continue
+                    total += 1
+                    diff1 = abs(utt_start - stime)
+                    diff2 = abs(utt_end - etime)
+                    if diff1 > 1 or diff2 > 1:
+                        skip_duration += utt_end - utt_start
+                        print("large deviation", f'{stem}, skip {skip_duration}s', diff1, diff2, t)
+                    else:
+                        if utt_end - utt_start > 1.0:
+                            #去掉1秒以下，2个字或词以下的内容
+                            if lang in ('zh', 'ja', 'th'):
+                                utt_txt = pattern_punctuation.sub("", cleaned_texts_slice[i])
+                                if len(utt_txt) > 2:
+                                    accuracy += 1
+                                    subs.append((rec_ids_slice[i], utt_start, utt_end, unm_transcripts_slice[i], cleaned_texts_slice[i]))
+                            else:
+                                if cleaned_texts_slice[i].count(' ') > 1:
+                                    accuracy += 1
+                                    subs.append((rec_ids_slice[i], utt_start, utt_end, unm_transcripts_slice[i], cleaned_texts_slice[i]))
+                offset_second = 0.1
+            except AssertionError:
+                offset_second = 0.5
+            except Exception:
+                print(txt, unm_transcripts_slice, timestamp_slice)
+                import traceback
+                traceback.print_exc()
+            start = end
+            if end >= len(timestamps):
+                break
+        if total == 0:
+            print('skip:', stem, accuracy, total)
+        elif accuracy/total < 0.7:
+            print('skip:', stem, accuracy/total)
+        else:
+            print('pass:', stem, accuracy/total)
+            out_queue.put((flac,subs))
+    print(f"align_worker {num} stopped")
 
 def align(
-    wavdir: Path,
+    flacdir: Path,
     txtdir: Path,
     output: Path,
-    asr_train_config: Union[Path, str],
-    asr_model_file: Union[Path, str] = None,
-    longest_audio_segments: float = 320,
-    partitions_overlap_frames: int = 30,
-    log_level: Union[int, str] = "INFO",
+    lang: str = 'en',
     **kwargs,
 ):
-    """Provide the scripting interface to score text to audio.
-
-    longest_audio_segments:
-        Size of maximum length for partitions. If an audio file
-        is longer, it gets split into parts that are 75% of this value.
-        The 75% was chosen to prevent empty partitions.
-        This value is chosen based on the observation that Transformer-based
-        models crash on audio parts longer than ~400-500 s on a computer
-        with 64GB RAM
-
-    partitions_overlap_frames:
-        Additional overlap between audio segments. This number is measured
-        in lpz indices. The time is calculated as:
-        overlap_time [s] = frontend_frame_size / fs * OVERLAP
-        Should be > 600 ms.
-    """
-    assert check_argument_types()
-    # make sure that output is a path!
-    logfile = output / "segments.log"
-    segments = output / "segments.txt"
-    logging.basicConfig(
-        level=log_level,
-        filename=str(logfile),
-        format="%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s",
-    )
-
-    # Ignore configuration values that are set to None (from parser).
-    kwargs = {k: v for (k, v) in kwargs.items() if v is not None}
-
-    # Prepare CTC segmentation module
-    model = {
-        "asr_train_config": asr_train_config,
-        "asr_model_file": asr_model_file,
-    }
-    logging.info(f"Loading ASR model from {asr_model_file}")
-    aligner = CTCSegmentation(
-        **model, **kwargs, kaldi_style_text=True, gratis_blank=True
-    )
-    fs = 16000
-    logging.info(
-        f"Zero cost transitions (gratis_blank) set to"
-        f" {aligner.config.blank_transition_cost_zero}."
-    )
-
-    # Set fixed ratio for time stamps.
-    # Note: This assumes that the Frontend discards trailing data.
-    aligner.set_config(
-        time_stamps="fixed",
-    )
-    # estimated index to frames ratio, usually 512, but sometimes 768
-    # - depends on architecture
-    samples_to_frames_ratio = int(aligner.estimate_samples_to_frames_ratio())
-    # Forced fix for some issues where the ratio is not correctly determined...
-    if 500 <= samples_to_frames_ratio <= 520:
-        samples_to_frames_ratio = 512
-    elif 750 <= samples_to_frames_ratio <= 785:
-        samples_to_frames_ratio = 768
-    aligner.set_config(
-        samples_to_frames_ratio=samples_to_frames_ratio,
-    )
-    logging.info(
-        f"Timing ratio (sample points per CTC index) set to"
-        f" {samples_to_frames_ratio} ({aligner.time_stamps})."
-    )
-    logging.info(
-        f"Partitioning over {longest_audio_segments}s."
-        f" Overlap time: "
-        f"{samples_to_frames_ratio/fs*(2*partitions_overlap_frames)}s"
-        f" (overlap={partitions_overlap_frames})"
-    )
-
-    ## application-specific settings
-    # japanese text cleaning
-    aligner.preprocess_fn.text_cleaner.cleaner_types += ["jaconv"]
-
-    # Create queues
-    task_queue = Queue(maxsize=NUMBER_OF_PROCESSES)
-    done_queue = Queue()
+    if not output:
+        output.mkdir()
+    segment_file = output / "segments.trans.tsv"
+    if segment_file.exists():
+        with open(segment_file) as f:
+            seg_list = f.readlines()
+        seg_list = set([item.split('\t', 1)[0] for item in seg_list])
+    else:
+        seg_list = set()
+        segment_file.touch()
+    print(len(seg_list))
 
     # find files
-    files_dict = find_files(wavdir, txtdir)
+    files_dict = find_files(flacdir, txtdir)
     num_files = len(files_dict)
-    logging.info(f"Found {num_files} files.")
+    print(f"Found {num_files} files.")
+
+    task_queue = Queue(maxsize=NUMBER_OF_PROCESSES)
+    done_queue = Queue()
 
     # Start worker processes
     Process(
         target=listen_worker,
         args=(
             done_queue,
-            segments,
+            segment_file,
+            output
         ),
     ).start()
+
     for i in range(NUMBER_OF_PROCESSES):
-        Process(target=align_worker, args=(task_queue, done_queue, i)).start()
+        Process(target=align_worker, args=(task_queue, done_queue, lang, seg_list, i)).start()
 
     # Align
-    count_files = 0
     for stem in files_dict.keys():
-        count_files += 1
-        (wav, txt) = files_dict[stem]
-
-        # generate kaldi-style `text`
-        with open(txt) as f:
-            utterance_list = f.readlines()
-        utterance_list = [
-            item.replace("\t", " ").replace("\n", "") for item in utterance_list
-        ]
-        text = []
-        for i, utt in enumerate(utterance_list):
-            utt_start, utt_end, utt_txt = utt.split(" ", 2)
-            # text processing
-            utt_txt = text_processing(utt_txt)
-            cleaned = aligner.preprocess_fn.text_cleaner(utt_txt)
-            text.append(f"{stem}_{i:04} {cleaned}")
-
-        # audio
-        speech, sample_rate = soundfile.read(wav)
-        speech_len = speech.shape[0]
-        speech = torch.tensor(speech)
-        partitions = get_partitions(
-            speech_len,
-            max_len_s=longest_audio_segments,
-            samples_to_frames_ratio=samples_to_frames_ratio,
-            fs=fs,
-            overlap=partitions_overlap_frames,
-        )
-        duration = speech_len / sample_rate
-        # CAVEAT Assumption: Frontend discards trailing data:
-        expected_lpz_length = (speech_len // samples_to_frames_ratio) - 1
-
-        logging.info(
-            f"Inference on file {stem} {count_files}/{num_files}: {len(utterance_list)}"
-            f" utterances:  ({duration}s ~{len(partitions['partitions'])}p)"
-        )
-        try:
-            # infer
-            lpzs = [
-                torch.tensor(aligner.get_lpz(speech[start:end]))
-                for start, end in partitions["partitions"]
-            ]
-            lpz = torch.cat(lpzs).numpy()
-            lpz = np.delete(lpz, partitions["delete_overlap_list"], axis=0)
-            if lpz.shape[0] != expected_lpz_length and lpz.shape[0] != (
-                expected_lpz_length + 1
-            ):
-                # The one-off error fix is a little bit dirty,
-                # but it helps to deal with different frontend configurations
-                logging.error(
-                    f"LPZ size mismatch on {stem}: "
-                    f"got {lpz.shape[0]}-{expected_lpz_length} expected."
-                )
-            task = aligner.prepare_segmentation_task(
-                text, lpz, name=stem, speech_len=speech_len
-            )
-            # align (done by worker)
-            task_queue.put(task)
-        except KeyboardInterrupt:
-            print(" -- Received keyboard interrupt. Stopping.")
-            break
-        except Exception as e:
-            # RuntimeError: unknown CUDA value error (at inference)
-            # TooShortUttError: Audio too short (at inference)
-            # IndexError: ground truth is empty (thrown at preparation)
-            logging.error(f"LPZ failed for file {stem}; {e.__class__}: {e}")
-    logging.info("Shutting down workers.")
-    # wait for workers to finish
-    time.sleep(20)
+        (flac, txt) = files_dict[stem]
+        task_queue.put((flac, txt))
     # Tell child processes to stop
     for i in range(NUMBER_OF_PROCESSES):
         task_queue.put("STOP")
+    while not task_queue.empty() or not done_queue.empty():
+        time.sleep(20)
     done_queue.put("STOP")
-
+    print("align done.")
 
 def get_parser():
-    """Obtain an argument-parser for the script interface."""
-    parser = config_argparse.ArgumentParser(
-        description="CTC segmentation",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    # Note(kamo): Use '_' instead of '-' as separator.
-    # '-' is confusing if written in yaml.
+    parser = argparse.ArgumentParser(description="CTC segmentation")
     parser.add_argument(
-        "--log_level",
-        type=lambda x: x.upper(),
-        default="INFO",
-        choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"),
-        help="The verbose level of logging",
-    )
-
-    parser.add_argument(
-        "--ngpu",
-        type=int,
-        default=0,
-        help="The number of gpus. 0 indicates CPU mode",
-    )
-    parser.add_argument(
-        "--dtype",
-        default="float32",
-        choices=["float16", "float32", "float64"],
-        help="Data type",
-    )
-
-    group = parser.add_argument_group("Text converter related")
-    group.add_argument(
-        "--token_type",
-        type=str_or_none,
-        default=None,
-        choices=["char", "bpe", None],
-        help="The token type for ASR model. "
-        "If not given, refers from the training args",
-    )
-    group.add_argument(
-        "--bpemodel",
-        type=str_or_none,
-        default=None,
-        help="The model path of sentencepiece. "
-        "If not given, refers from the training args",
-    )
-
-    group = parser.add_argument_group("CTC segmentation related")
-    group.add_argument(
-        "--fs",
-        type=int,
-        default=16000,
-        help="Sampling Frequency."
-        " The sampling frequency (in Hz) is needed to correctly determine the"
-        " starting and ending time of aligned segments.",
-    )
-    group.add_argument(
-        "--gratis_blank",
-        type=str2bool,
-        default=True,
-        help="Set the transition cost of the blank token to zero. Audio sections"
-        " labeled with blank tokens can then be skipped without penalty. Useful"
-        " if there are unrelated audio segments between utterances.",
-    )
-
-    group.add_argument(
-        "--longest_audio_segments",
-        type=int,
-        default=320,
-        help="Inference on very long audio files requires much memory."
-        " To avoid out-of-memory errors, long audio files can be partitioned."
-        " Set this value to the maximum unpartitioned audio length.",
-    )
-
-    group = parser.add_argument_group("The model configuration related")
-    group.add_argument("--asr_train_config", type=str, required=True)
-    group.add_argument("--asr_model_file", type=str, required=True)
-
-    group = parser.add_argument_group("Input/output arguments")
-    group.add_argument(
-        "--wavdir",
+        "--flacdir",
         type=Path,
         required=True,
-        help="WAV folder.",
+        help="FLAC folder.",
     )
-    group.add_argument(
+    parser.add_argument(
         "--txtdir",
         type=Path,
         required=True,
         help="Text files folder.",
     )
-    group.add_argument(
+    parser.add_argument(
         "--output",
         type=Path,
         help="Output segments directory.",
+    )
+    parser.add_argument(
+        "--lang",
+        default='en',
+        type=str,
     )
     return parser
 
 
 def main(cmd=None):
-    """Parse arguments and start."""
-    print(get_commandline_args(), file=sys.stderr)
     parser = get_parser()
     args = parser.parse_args(cmd)
     kwargs = vars(args)
-    kwargs.pop("config", None)
     align(**kwargs)
 
-
+NUMBER_OF_PROCESSES = 1
+skip_duration = 0
+pattern_space = regex.compile(r'\s')
+pattern_punctuation = regex.compile(r'[\p{P}\p{C}\p{S}\s]')
 if __name__ == "__main__":
     main()
